@@ -410,7 +410,7 @@ const K_OF_LABEL=Object.fromEntries(Object.entries(DUTY).map(([k,v])=>[v.label,k
 const isoOf=v=>{v=String(v||'').trim();if(/^\d{4}-\d{2}-\d{2}/.test(v))return v.slice(0,10);const m=v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);if(m)return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;return v};
 const fmtD=iso=>{const i=idxOf[iso];if(i!==undefined)return fmt(i);const d=new Date(iso+'T00:00:00Z');return isNaN(d)?esc(iso):`${DOW[d.getUTCDay()]} ${d.getUTCDate()} ${MON[d.getUTCMonth()]}`};
 const LEAVE_KIND=l=>(LEAVE_TYPES.find(t=>t[1]===l)||[''])[0];
-function swapFrom(o){const d=isoOf(o.date);return {type:'swap',id:o.id,from:o.from,to:o.to,d,i:idxOf[d],k:K_OF_LABEL[o.duty],dutyLabel:o.duty,kind:o.kind,note:o.note||'',status:(o.status||'pending').toLowerCase(),result:o.result||''}}
+function swapFrom(o){const d=isoOf(o.date),bd=isoOf(o.backDate);return {back:o.backDate?{d:bd,i:idxOf[bd],k:K_OF_LABEL[o.backDuty],dutyLabel:o.backDuty}:null,type:'swap',id:o.id,from:o.from,to:o.to,d,i:idxOf[d],k:K_OF_LABEL[o.duty],dutyLabel:o.duty,kind:o.kind,note:o.note||'',status:(o.status||'pending').toLowerCase(),result:o.result||''}}
 function leaveFrom(o){return {type:'leave',id:o.id,n:o.n,kind:o.kind||'',s:isoOf(o.s),e:isoOf(o.e),note:o.note||'',status:(o.status||'pending').toLowerCase(),result:o.result||''}}
 function localLists(){const L=store.get('mine',{});const all=Object.values(L).filter(x=>x.from===state.me||x.n===state.me);
   state.requests=all.filter(x=>x.type==='swap').map(swapFrom);state.leaveReqs=all.filter(x=>x.type==='leave').map(leaveFrom)}
@@ -420,7 +420,7 @@ async function loadMine(){
   try{const r=await apiGet({action:'mine',name:state.me});const L=store.get('mine',{});
     r.requests.forEach(q=>{const old=L[q.id]||{};
       L[q.id]=q.type==='Leave'?{...old,type:'leave',id:q.id,n:state.me,s:q.date,e:q.toDate,status:q.status,result:q.result}
-        :{...old,type:'swap',id:q.id,from:state.me,to:q.other,date:q.date,duty:q.duty,kind:q.type==='Swap'?'exchange':'cover',status:q.status,result:q.result}});
+        :{...old,type:'swap',id:q.id,from:state.me,to:q.other,date:q.date,duty:q.duty,backDate:q.returnDate,backDuty:q.returnDuty,kind:q.type==='Swap'?'exchange':'cover',status:q.status,result:q.result}});
     store.set('mine',L);const before=JSON.stringify([state.requests,state.leaveReqs]);localLists();
     if(JSON.stringify([state.requests,state.leaveReqs])!==before)render()}catch(e){}
 }
@@ -428,7 +428,7 @@ async function loadAdmin(){
   const pw=sess('orthoPw');if(!pw)return false;
   const r=await apiPost({action:'admin',pw});
   state.sheetUrl=r.url;state.adminLoaded=true;
-  state.requests=r.requests.filter(o=>o.Type!=='Leave').map(o=>swapFrom({id:o.ID,from:o.Doctor,to:o['Other doctor'],date:o.Date,duty:o.Duty,kind:o.Type==='Swap'?'exchange':'cover',note:o.Note,status:o.Status,result:o.Result}));
+  state.requests=r.requests.filter(o=>o.Type!=='Leave').map(o=>swapFrom({id:o.ID,from:o.Doctor,to:o['Other doctor'],date:o.Date,duty:o.Duty,backDate:o['Return date'],backDuty:o['Return duty'],kind:o.Type==='Swap'?'exchange':'cover',note:o.Note,status:o.Status,result:o.Result}));
   state.leaveReqs=r.requests.filter(o=>o.Type==='Leave').map(o=>leaveFrom({id:o.ID,n:o.Doctor,kind:LEAVE_KIND(o['Leave type']),s:o.Date,e:o['To date'],note:o.Note,status:o.Status,result:o.Result}));
   return true;
 }
@@ -603,7 +603,7 @@ function updateLeaveClash(){
 function reqCard(r){
   const st={pending:['PENDING','warn'],approved:['APPROVED','ok'],rejected:['NOT APPROVED','alert']}[r.status||'pending']||['PENDING','warn'];
   return `<div class="card"><div style="display:flex;justify-content:space-between;gap:8px"><b>${r.k?DUTY[r.k].label:esc(r.dutyLabel||'Duty')}, ${fmtD(r.d)}</b><span class="badge" style="--c:var(--${st[1]});--c-s:var(--${st[1]}-soft)">${st[0]}</span></div>
-  <div class="note" style="margin:4px 0 8px">${r.kind==='cover'?'Cover by':'Swap with'} ${esc(r.to)}${r.note?' · '+esc(r.note):''}</div>${r.result&&/^⚠/.test(r.result)?`<div class="alert" style="margin-bottom:8px"><span class="dot"></span><div>${esc(r.result)}</div></div>`:''}
+  <div class="note" style="margin:4px 0 8px">${r.kind==='cover'?'Cover by':'Swap with'} ${esc(r.to)}${r.back?` · you take their ${r.back.k?DUTY[r.back.k].label:esc(r.back.dutyLabel)}, ${fmtD(r.back.d)}`:''}${r.note?' · '+esc(r.note):''}</div>${r.result&&/^⚠/.test(r.result)?`<div class="alert" style="margin-bottom:8px"><span class="dot"></span><div>${esc(r.result)}</div></div>`:''}
   <div class="steps"><span class="done"><i></i>Sent</span><span class="${r.status==='pending'?'cur':'done'}"><i></i>Coordinator checks with both</span><span class="${r.status==='approved'?'done':''}"><i></i>Rota updated</span></div></div>`;
 }
 
@@ -689,12 +689,12 @@ function workloadSheet(n){
 function adminRequests(){
   const pend=state.requests.filter(r=>r.status==='pending'),done=state.requests.filter(r=>r.status!=='pending').reverse().slice(0,30);
   const card=r=>`<div class="card"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(r.from)} → ${esc(r.to)}</b><span class="badge" style="--c:var(--warn);--c-s:var(--warn-soft)">${r.kind==='cover'?'COVER':'SWAP'}</span></div>
-    <div class="note" style="margin:4px 0 10px">${r.k?DUTY[r.k].label:esc(r.dutyLabel)} · ${fmtD(r.d)}${r.kind==='exchange'?' · give-back duty to be agreed':''}${r.note?' · “'+esc(r.note)+'”':''}</div>
+    <div class="note" style="margin:4px 0 10px">${r.k?DUTY[r.k].label:esc(r.dutyLabel)} · ${fmtD(r.d)}${r.back?`<br>In return <b>${esc(r.from)}</b> takes <b>${esc(r.to)}</b>’s ${r.back.k?DUTY[r.back.k].label:esc(r.back.dutyLabel)} · ${fmtD(r.back.d)}`:r.kind==='exchange'?' · give-back duty to be agreed':''}${r.note?' · “'+esc(r.note)+'”':''}</div>
     <div class="alert" style="margin-bottom:10px"><span class="dot"></span><div>Confirm with <b>${esc(r.from)}</b> and <b>${esc(r.to)}</b> before approving. Anyone with the link can send a request.</div></div>
     <div style="display:flex;gap:8px"><button class="btn primary" style="flex:1" data-approve="${esc(r.id)}">Approve</button><button class="btn" style="flex:1" data-reject="${esc(r.id)}">Reject</button></div></div>`;
   return `${pend.length?`<div class="list">${pend.map(card).join('')}</div>`:'<div class="alert ok"><span class="dot"></span><div>No requests waiting.</div></div>'}
-  <p class="note">Approving writes the new name into that one cell of the Google Sheet, only if the cell still shows the old name. You can also decide in the Sheet: Requests tab → Status column.</p>
-  ${done.length?`<div class="section"><h2>Decided</h2>${done.map(r=>`<div class="card"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(r.from)} → ${esc(r.to)}</b><span class="badge" style="--c:var(--${r.status==='approved'?'ok':'alert'});--c-s:var(--${r.status==='approved'?'ok':'alert'}-soft)">${r.status==='approved'?'APPROVED':'NOT APPROVED'}</span></div><div class="note" style="margin-top:4px">${r.k?DUTY[r.k].label:esc(r.dutyLabel)} · ${fmtD(r.d)}</div>${r.result?`<div class="note" style="margin-top:6px;${/^⚠/.test(r.result)?'color:var(--warn);font-weight:600':''}">${esc(r.result)}</div>`:''}</div>`).join('')}</div>`:''}`;
+  <p class="note">Approving writes the change into the Google Sheet (both cells for a swap), only if the cells still show the old names; otherwise nothing is written and you are told. You can also decide in the Sheet: Requests tab → Status column.</p>
+  ${done.length?`<div class="section"><h2>Decided</h2>${done.map(r=>`<div class="card"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(r.from)} → ${esc(r.to)}</b><span class="badge" style="--c:var(--${r.status==='approved'?'ok':'alert'});--c-s:var(--${r.status==='approved'?'ok':'alert'}-soft)">${r.status==='approved'?'APPROVED':'NOT APPROVED'}</span></div><div class="note" style="margin-top:4px">${r.k?DUTY[r.k].label:esc(r.dutyLabel)} · ${fmtD(r.d)}${r.back?` ⇄ ${r.back.k?DUTY[r.back.k].label:esc(r.back.dutyLabel)} · ${fmtD(r.back.d)}`:''}</div>${r.result?`<div class="note" style="margin-top:6px;${/^⚠/.test(r.result)?'color:var(--warn);font-weight:600':''}">${esc(r.result)}</div>`:''}</div>`).join('')}</div>`:''}`;
 }
 function adminStaff(){
   const order=['consultant','senior','transitional','junior','rotator','intern'];
@@ -771,6 +771,15 @@ function personSheet(n){
   <div class="section" style="margin-top:16px"><h2>Next duties</h2><div class="list">${next.map(d=>`<button class="item" style="${cv(DUTY[d.k].c)}" data-goto="${d.i}"><span class="when"><b>${days[d.i].dd}</b>${DOW[days[d.i].dow]}</span><span class="what"><b>${DUTY[d.k].label}</b><small>${MON[days[d.i].m-1]}${d.detail?' · '+esc(d.detail):''}</small></span>${tag(d.k)}</button>`).join('')||'<p class="none">None scheduled.</p>'}</div></div>
   <p class="note">Contact details are private and appear only when the person chooses to share them.</p>`);
 }
+// Swap: after choosing a colleague, choose which of their duties you take in return.
+function swapUI(){
+  const s=window._swap,box=document.getElementById('backbox'),b=document.getElementById('sendswap');if(!box||!b)return;
+  if(s.kind!=='exchange'||!s.to){box.innerHTML='';s.back=null;b.disabled=!s.to;b.textContent=s.to?'Send to '+s.to:'Choose a colleague';return}
+  const theirs=myDuties(s.to).filter(d=>d.i>=todayIdx&&!(d.i===s.i&&d.k===s.k)).filter(d=>{const x=days[d.i];
+    return !duties(d.i).some(y=>y.rota===d.rota&&isPerson(y.n)&&canon(y.n)===state.me)&&!leaveOf(state.me,x.d).length});
+  box.innerHTML=`<h2 style="margin-top:14px">${esc(s.to)}’s duty you take in return · ${theirs.length}</h2><div class="list">${theirs.map(d=>`<button class="opt" data-back="${d.i}|${d.k}" aria-pressed="${!!s.back&&s.back.i===d.i&&s.back.k===d.k}"><b>${fmt(d.i)}</b><span class="note">${DUTY[d.k].label}${d.detail?' · '+esc(d.detail):''}</span></button>`).join('')||'<p class="none">No upcoming duty of theirs that you are free for. Ask for cover instead.</p>'}</div>`;
+  b.disabled=!s.back;b.textContent=s.back?`Send swap with ${s.to}`:'Choose their duty';
+}
 function swapSheet(i,k){
   const x=days[i],mine=myDuties(state.me).find(d=>d.i===i&&d.k===k);
   const g=STAFF[state.me].g,peers=DEMO.staff.filter(s=>s.status!=='inactive'&&s.n!==state.me&&(s.g===g||(g==='senior'&&s.g==='transitional')||(g==='transitional'&&['senior','junior'].includes(s.g))||(g==='junior'&&s.g==='transitional')));
@@ -779,7 +788,7 @@ function swapSheet(i,k){
   window._swap={i,k,kind:'cover',to:null};
   openSheet(`<div style="display:flex;justify-content:space-between;gap:10px"><div><h3>${DUTY[k].label}</h3><div class="sub">${fmtLong(i)}</div></div><button class="iconbtn" data-close aria-label="Close">${NAV.close}</button></div>
   <div class="section" style="margin-top:14px"><div class="seg" id="swapkind"><button aria-pressed="true" data-kind="cover">Ask for cover</button><button aria-pressed="false" data-kind="exchange">Swap duties</button></div>
-  <h2>Free that ${mine.rota==='oc'?'night':'morning'} · ${free.length}</h2><div class="list">${free.map(p=>`<button class="opt" data-to="${esc(p.n)}"><b>${esc(p.n)}</b><span class="note">${GRADE_NAME[p.g]}</span></button>`).join('')}</div>
+  <h2>Free that ${mine.rota==='oc'?'night':'morning'} · ${free.length}</h2><div class="list">${free.map(p=>`<button class="opt" data-to="${esc(p.n)}"><b>${esc(p.n)}</b><span class="note">${GRADE_NAME[p.g]}</span></button>`).join('')}</div><div id="backbox"></div>
   </div><div class="pin"><div class="steps"><span class="cur"><i></i>You send</span><span><i></i>Coordinator checks with both of you</span><span><i></i>Rota updated</span></div>
   <p class="note" style="margin:0">Goes to the rota coordinators (Ayman, Yousif Ali). Nothing changes until they approve.</p>
   <button class="btn primary block" id="sendswap" disabled>Choose a colleague</button></div>`);
@@ -846,9 +855,10 @@ document.addEventListener('click',e=>{
   const ps=t.closest('[data-past]');if(ps){state.past=ps.dataset.past==='1';render();return}
   const tt=t.closest('[data-teamtab]');if(tt){state.teamTab=tt.dataset.teamtab;render();return}
   const du=t.closest('[data-duty]');if(du){const [i,k]=du.dataset.duty.split('|');if(+i>=todayIdx)swapSheet(+i,k);return}
-  const kd=t.closest('[data-kind]');if(kd){window._swap.kind=kd.dataset.kind;document.querySelectorAll('#swapkind button').forEach(b=>b.setAttribute('aria-pressed',b===kd));return}
-  const to=t.closest('[data-to]');if(to){window._swap.to=to.dataset.to;document.querySelectorAll('[data-to]').forEach(b=>b.setAttribute('aria-pressed',b===to));const b=document.getElementById('sendswap');b.disabled=false;b.textContent='Send to '+to.dataset.to;return}
-  if(t.closest('#sendswap')){const s=window._swap,b=t.closest('#sendswap'),x=days[s.i];const c=(x.cells||[]).find(c=>c.k===s.k&&canon(c.n)===state.me);if(!c){toast('Could not find this duty in the Sheet. Ask a coordinator.',true);return}b.disabled=true;b.textContent='Sending…';apiPost({action:'swap',from:state.me,to:s.to,date:x.d,duty:DUTY[s.k].label,kind:s.kind,cell:c.cell}).then(res=>{remember({type:'swap',id:res.id,from:state.me,to:s.to,date:x.d,duty:DUTY[s.k].label,kind:s.kind,status:'Pending'});localLists();closeSheet();render();toast('Request sent to the coordinators')}).catch(e=>{b.disabled=false;b.textContent='Send to '+s.to;toast(esc(e.message),true)});return}
+  const kd=t.closest('[data-kind]');if(kd){window._swap.kind=kd.dataset.kind;window._swap.back=null;document.querySelectorAll('#swapkind button').forEach(b=>b.setAttribute('aria-pressed',b===kd));swapUI();return}
+  const bk=t.closest('[data-back]');if(bk){const [bi,bkk]=bk.dataset.back.split('|');window._swap.back={i:+bi,k:bkk};swapUI();return}
+  const to=t.closest('[data-to]');if(to){window._swap.to=to.dataset.to;window._swap.back=null;document.querySelectorAll('[data-to]').forEach(b=>b.setAttribute('aria-pressed',b===to));swapUI();return}
+  if(t.closest('#sendswap')){const s=window._swap,b=t.closest('#sendswap'),x=days[s.i];const c=(x.cells||[]).find(c=>c.k===s.k&&canon(c.n)===state.me);if(!c){toast('Could not find this duty in the Sheet. Ask a coordinator.',true);return}let back=null;if(s.kind==='exchange'){if(!s.back)return;const y=days[s.back.i],bc=(y.cells||[]).find(c=>c.k===s.back.k&&canon(c.n)===s.to);if(!bc){toast('Could not find their duty in the Sheet. Ask a coordinator.',true);return}back={date:y.d,duty:DUTY[s.back.k].label,cell:bc.cell}}b.disabled=true;b.textContent='Sending…';apiPost({action:'swap',from:state.me,to:s.to,date:x.d,duty:DUTY[s.k].label,kind:s.kind,cell:c.cell,back}).then(res=>{remember({type:'swap',id:res.id,from:state.me,to:s.to,date:x.d,duty:DUTY[s.k].label,kind:s.kind,backDate:back&&back.date,backDuty:back&&back.duty,status:'Pending'});localLists();closeSheet();render();toast('Request sent to the coordinators')}).catch(e=>{b.disabled=false;b.textContent='Send to '+s.to;toast(esc(e.message),true)});return}
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet()});
 document.addEventListener('change',e=>{if(['lfrom','lto'].includes(e.target.id))updateLeaveClash();if(e.target.id==='wsort'){state.wSort=e.target.value;render()}});
@@ -929,7 +939,10 @@ function parseMorning(g){
     const cell=c=>c<0?'':norm(g[r]?.[c]);
     if(cell(mc))out.push({date:iso,slot:'mc_junior',position:1,raw:splitNames(cell(mc))[0],cell:cellRef(r,mc)});
     if(cell(mc+1))out.push({date:iso,slot:'mc_senior',position:1,raw:splitNames(cell(mc+1))[0],cell:cellRef(r,mc+1)});
-    if(cell(tr)){const p=splitNames(cell(tr));if(p.length!==2)warn.push({cell:cellRef(r,tr),issue:'trauma_not_a_pair',detail:cell(tr)});p.forEach((n,i)=>out.push({date:iso,slot:'trauma_ot',position:i+1,raw:n,cell:cellRef(r,tr)}))}
+    // Trauma O.T.: one cell "A / B", or two cells side by side under a merged header.
+    if(tr>=0){const tc=[];for(let c=tr;c<(sb>tr?sb:tr+1);c++)tc.push(c);let pos=0;const all=[];
+      tc.forEach(c=>{if(cell(c))splitNames(cell(c)).forEach(n=>{all.push(n);out.push({date:iso,slot:'trauma_ot',position:++pos,raw:n,cell:cellRef(r,c)})})});
+      if(all.length&&all.length!==2)warn.push({cell:cellRef(r,tr),issue:'trauma_not_a_pair',detail:all.join(' / ')})}
     if(sb>=0)for(let c=sb,p=1;c<sb+3;c++,p++)if(cell(c))out.push({date:iso,slot:'standby',position:p,raw:splitNames(cell(c))[0],cell:cellRef(r,c)});
   }
   return {month:ym,assignments:out,leave:[],warnings:warn};
