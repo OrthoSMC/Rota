@@ -287,6 +287,26 @@ button.stat[aria-pressed="true"]{border-color:var(--accent);background:var(--acc
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));z-index:60;background:var(--fg);color:var(--bg);border:0;border-radius:12px;padding:12px 16px;font:600 14px var(--f-ui);box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:min(92vw,440px);text-align:left}
 .toast.bad{background:var(--alert);color:#fff}
 @media (min-width:900px){.toast{bottom:24px}}
+[hidden]{display:none!important}
+.opt[disabled]{opacity:.5;cursor:not-allowed}
+.cellbtn{all:unset;cursor:pointer;border-bottom:1px dashed var(--accent);font:inherit;color:inherit}.cellbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.tlabel{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);font-weight:700}
+.tfacts{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:6px 12px;margin:4px 0 0;font-size:14px;align-items:baseline;width:100%}
+.tfacts dt{color:var(--mute);font-size:12.5px}.tfacts dd{margin:0;font-weight:600;min-width:0}
+.agenote{font-size:12.5px;color:var(--warn);font-weight:600;margin-top:2px}
+@media (max-width:380px){.tfacts{grid-template-columns:1fr}.tfacts dd{margin-bottom:4px}}
+.oncallnow{background:var(--hero);color:#fff;border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:3px}
+.oncallnow .eyebrow{color:#9FB3C8}.oncallnow b{font-size:17px}.oncallnow span{font-size:14px;color:#D3DEEA}.oncallnow .small{font-size:12.5px;color:#FDB022}
+.oncallnow.other{background:var(--surface);color:var(--fg);border:1px dashed var(--line-2)}.oncallnow.other span,.oncallnow.other .eyebrow{color:var(--mute)}
+.substrip{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.oncallnow .subst{font-size:12.5px;background:rgba(255,255,255,.1);border-radius:8px;padding:4px 8px}.oncallnow .subst.off{opacity:.65}.oncallnow .tgen{margin-top:6px}
+.viewtog{width:auto;flex:none}.viewtog button{padding:6px 10px;font-size:13px}
+.tlist{padding:2px 14px}.trow{padding:12px 0;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px}.trow:first-child{border-top:0}.tt{font-weight:600;font-size:15px}
+.tdec{border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:3px;font-size:14px;align-items:flex-start}.tdec.ok{background:var(--ok-soft)}.tdec.ok b{color:var(--ok)}.tdec.verify{background:var(--warn-soft)}.tdec.verify b{color:var(--warn)}
+.small{font-size:12.5px;color:var(--mute)}
+.doccard{display:flex;flex-direction:column;gap:4px}.upl{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.pdftools{display:flex;align-items:center;gap:6px;margin:12px 0 8px}.pdftools .search{flex:1;min-width:0;min-height:40px;padding:6px 10px}.pdftools .iconbtn{font-size:20px;font-weight:700;color:var(--fg)}
+#pdfpages{overflow-x:auto;padding:4px 0 8px}.pdfpage{position:relative;margin:0 auto 12px;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.18)}.pdfpage canvas{display:block}
+.pdfhit{position:absolute;background:rgba(255,196,0,.4);border-radius:2px;pointer-events:none}.pdfhit.cur{background:rgba(255,140,0,.45);outline:2px solid #E8590C}
 </style>
 </head>
 <body>
@@ -322,6 +342,7 @@ const NAV={
  rota:S('<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9h18M9 9v11M15 9v11"/>'),
  me:S('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'),
  team:S('<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6 6 0 0 1 3.5 6"/>'),
+ resources:S('<path d="M5 4.5A2.5 2.5 0 0 1 7.5 2H19v17H7.5A2.5 2.5 0 0 0 5 21.5z"/><path d="M5 21.5A2.5 2.5 0 0 1 7.5 19H19v3H7.5"/><path d="M12 6.5v6M9 9.5h6"/>'),
  admin:S('<rect x="4" y="10.5" width="16" height="10" rx="2.5"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.5" r="1.4" fill="currentColor"/>'),
  alerts:S('<path d="M12 3 3 19h18L12 3z"/><path d="M12 10v4M12 17h.01"/>'),
  close:S('<path d="M6 6l12 12M18 6 6 18"/>'),
@@ -350,11 +371,11 @@ const KEY='orthoLive.';
 const store={get(k,d){try{const v=localStorage.getItem(KEY+k);return v===null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(KEY+k,JSON.stringify(v))}catch(e){}}};
 
 function bahrainToday(){try{return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Bahrain'}).format(new Date())}catch(e){return '2026-10-27'}}
-const TODAY=bahrainToday();
-const todayIdx=idxOf[TODAY]??(TODAY<days[0].d?0:days.length-1);
-const inRange=idxOf[TODAY]!==undefined;
+let TODAY=onCallDateAt(new Date());   // on-call day runs 07:00 → 07:00 (Bahrain)
+let todayIdx=idxOf[TODAY]??(TODAY<days[0].d?0:days.length-1);
+let inRange=idxOf[TODAY]!==undefined;
 const sess=k=>{try{return sessionStorage.getItem(k)}catch(e){return null}};
-let state={admin:!!sess('orthoPw'),adminLoaded:false,sheetUrl:'',adminTab:sess('orthoAdminTab')||'requests',wGroup:'senior',wMetric:'oc',wMonth:null,wSort:'desc',uf:null,leaveReqs:[],sheetPreview:false,publishedMsg:'',mf:null,date:todayIdx,me:store.get('me',null),rota:'oncall',month:days[todayIdx].d.slice(0,7),grid:false,past:false,q:'',teamTab:'staff',requests:[]};
+let state={admin:!!sess('orthoPw'),adminLoaded:false,sheetUrl:'',adminTab:sess('orthoAdminTab')||'requests',wGroup:'senior',wMetric:'oc',wMonth:null,wSort:'desc',uf:null,leaveReqs:[],sheetPreview:false,publishedMsg:'',mf:null,date:todayIdx,me:store.get('me',null),rota:'oncall',month:days[todayIdx].d.slice(0,7),grid:true,past:false,q:'',teamTab:'staff',requests:[]};
 if(state.me&&!STAFF[state.me])state.me=null;
 
 const isPerson=n=>n&&n!=='NEURO'&&n!=='ROTATOR';
@@ -403,7 +424,7 @@ function checks(){
 }
 const CHK=checks();
 const upcoming=a=>a.filter(x=>x.i>=todayIdx);
-const alertCount=upcoming(CHK.gap).length+upcoming(CHK.leave).length+upcoming(CHK.unres).length+upcoming(CHK.grade).length;
+let alertCount=upcoming(CHK.gap).length+upcoming(CHK.leave).length+upcoming(CHK.unres).length+upcoming(CHK.grade).length;
 
 // ---------- requests (stored in the "Requests" tab of the Sheet) ----------
 const K_OF_LABEL=Object.fromEntries(Object.entries(DUTY).map(([k,v])=>[v.label,k]));
@@ -428,7 +449,8 @@ async function loadAdmin(){
   const pw=sess('orthoPw');if(!pw)return false;
   const r=await apiPost({action:'admin',pw});
   state.sheetUrl=r.url;state.adminLoaded=true;
-  state.requests=r.requests.filter(o=>o.Type!=='Leave').map(o=>swapFrom({id:o.ID,from:o.Doctor,to:o['Other doctor'],date:o.Date,duty:o.Duty,backDate:o['Return date'],backDuty:o['Return duty'],kind:o.Type==='Swap'?'exchange':'cover',note:o.Note,status:o.Status,result:o.Result}));
+  state.changes=r.requests.filter(o=>o.Type==='Admin change').slice(-15).reverse();
+  state.requests=r.requests.filter(o=>o.Type!=='Leave'&&o.Type!=='Admin change').map(o=>swapFrom({id:o.ID,from:o.Doctor,to:o['Other doctor'],date:o.Date,duty:o.Duty,backDate:o['Return date'],backDuty:o['Return duty'],kind:o.Type==='Swap'?'exchange':'cover',note:o.Note,status:o.Status,result:o.Result}));
   state.leaveReqs=r.requests.filter(o=>o.Type==='Leave').map(o=>leaveFrom({id:o.ID,n:o.Doctor,kind:LEAVE_KIND(o['Leave type']),s:o.Date,e:o['To date'],note:o.Note,status:o.Status,result:o.Result}));
   return true;
 }
@@ -452,11 +474,11 @@ function chip(n,iso,{showGrade=false}={}){
   const c=canon(n),st=STAFF[c],lv=iso&&leaveOf(c,iso).length;
   return `<button class="chip${c===state.me?' me':''}${lv?' leave':''}" data-person="${esc(c)}">${esc(c)}${showGrade&&st?`<span class="g">${GRADE[st.g]}</span>`:''}</button>`;
 }
-function topbar(eyebrow,title,extra=''){return `<div class="topbar"><div class="titlerow"><div><div class="eyebrow">${eyebrow}</div><h1>${title}</h1></div>${META.label?`<span class="demo">${esc(META.label)}</span>`:''}</div>${extra}</div>`}
+function topbar(eyebrow,title,extra='',right=''){return `<div class="topbar"><div class="titlerow"><div><div class="eyebrow">${eyebrow}</div><h1>${title}</h1></div>${right}${META.label?`<span class="demo">${esc(META.label)}</span>`:''}</div>${extra}</div>`}
 function strip(){
   const myDays=new Set(state.me?myDuties(state.me).map(d=>d.i):[]);
   const gapDays=new Set(CHK.gap.filter(g=>g.bad).map(g=>g.i));
-  return `<div class="strip" id="strip">${days.map(x=>`<button class="day${x.we?' we':''}${x.i===todayIdx&&inRange?' today':''}" aria-pressed="${x.i===state.date}" data-date="${x.i}" aria-label="${fmtLong(x.i)}"><small>${x.i===todayIdx&&inRange?'TODAY':DOW[x.dow].toUpperCase()}</small><b>${x.dd}</b>${myDays.has(x.i)?'<i></i>':''}${gapDays.has(x.i)?'<span class="mo"></span>':''}</button>`).join('')}</div>`;
+  return `<div class="strip" id="strip">${days.map(x=>`<button class="day${x.we?' we':''}${x.i===todayIdx&&inRange?' today':''}" aria-pressed="${x.i===state.date}" data-date="${x.i}" aria-label="${fmtLong(x.i)}"><small>${x.i===todayIdx&&inRange?nowLabel():DOW[x.dow].toUpperCase()}</small><b>${x.dd}</b>${myDays.has(x.i)?'<i></i>':''}${gapDays.has(x.i)?'<span class="mo"></span>':''}</button>`).join('')}</div>`;
 }
 
 // ---------- Today ----------
@@ -476,14 +498,15 @@ function viewToday(){
   const oncall=`<div class="card">${row('tl','Team Leader',[oc[7]])}${row('ot','Operation Theatre',[oc[8],oc[9]])}${row('wards','Wards',[oc[10]])}${row('ae',`A&E · ${ae.length} doctors, ${aeS} senior`,ae)}${oc[15]?row('interns','Interns',[oc[15]]):''}</div>`;
   const morning=x.dow>4?`<div class="card"><span class="none">No morning duties on Fridays and Saturdays.</span></div>`:
    `<div class="card">${row('mcj','Junior morning call',[j])}${row('mcs','Senior morning call',[s])}${(x.dow===0||x.dow===3)?`<div class="duty" style="${cv('tr')}">${tag('tr')}<div><div class="lbl">Trauma O.T.</div><div class="pair">${t.map(n=>chip(n,iso)).join('<span>/</span>')}</div></div></div>`:''}${row('sb','Standby & Help',sb)}</div>`;
-  return `${topbar(i===todayIdx&&inRange?'Today':'Orthopaedics on call',fmtLong(i),strip())}
+  return `${topbar(i===todayIdx&&inRange?'Active on-call':'Orthopaedics on call',fmtLong(i),strip())}
   <div class="today-cols"><div>
-    <div class="section" style="margin-top:6px">${hero}</div>
+    <div class="section" style="margin-top:6px">${activeBanner(i)}</div>
+    <div class="section">${hero}</div>
     ${dayAlerts?`<div class="section">${dayAlerts}</div>`:''}
     <div class="section"><h2>Consultants</h2><div class="cons-grid">${tiles}</div></div>
   </div><div>
-    <div class="section"><h2>On call</h2>${oncall}</div>
-    <div class="section"><h2>Morning</h2>${morning}</div>
+    <div class="section"><h2>On call · 7 AM to 7 AM</h2>${oncall}</div>
+    <div class="section"><h2>Morning duties · ${dm(x.d)}</h2>${morning}</div>
   </div></div>`;
 }
 
@@ -495,8 +518,8 @@ function viewRota(){
   let body;
   if(state.grid)body=state.rota==='oncall'?gridOnCall(ms):gridMorning(ms);
   else body=`<div class="daylist wide">${ms.filter(x=>state.rota==='oncall'||!x.we).map(x=>state.rota==='oncall'?cardOnCall(x):cardMorning(x)).join('')}</div>`;
-  return `${topbar(META.drafts.includes(state.month)?'Draft · not yet published':'Published',`${state.rota==='oncall'?'On-call':'Morning'} · ${MONL[+state.month.slice(5)-1]}`,ctrl)}
-  <div style="display:flex;justify-content:flex-end;margin:4px 0 10px"><button class="btn" data-grid>${state.grid?'Day cards':'Spreadsheet view'}</button></div>${body}`;
+  return `${topbar(META.drafts.includes(state.month)?'Draft · not yet published':'Published',`${state.rota==='oncall'?'On-call':'Morning'} · ${MONL[+state.month.slice(5)-1]}`,ctrl,`<div class="seg viewtog" role="group" aria-label="View"><button aria-pressed="${state.grid}" data-view="grid">Spreadsheet</button><button aria-pressed="${!state.grid}" data-view="cards">Day cards</button></div>`)}
+  ${state.admin&&state.adminLoaded?`<p class="note" style="margin:8px 2px">${state.grid?'Coordinator: tap a name to replace it or remove it from that duty.':'Coordinator: switch to Spreadsheet to change or remove a name.'}</p>`:'<div style="height:8px"></div>'}${body}`;
 }
 function cardOnCall(x){
   const oc=x.oc,iso=x.d;
@@ -513,12 +536,12 @@ function gridOnCall(ms){
   const sub=['General','Spine','Pelvis','Paeds','Hip & Knee','Upper limb','Foot','','OT','OT','Wards','','','','',''];
   const gs=new Set([0,7,8,11,15]);
   const head=`<thead><tr><th class="d" rowspan="2">Date</th><th class="grp gs" colspan="7" style="${cv('cons')}">Consultants</th><th class="grp gs" style="${cv('tl')}">Team leader</th><th class="grp gs" colspan="3" style="${cv('ot')}">Operation theatre</th><th class="grp gs" colspan="4" style="${cv('ae')}">Accident &amp; Emergency</th><th class="grp gs" style="${cv('in')}">Interns</th></tr><tr>${sub.map((h,c)=>`<th class="${gs.has(c)?'gs':''}">${h}</th>`).join('')}</tr></thead>`;
-  return `<div class="tablewrap"><table class="rota">${head}<tbody>${ms.map(x=>`<tr class="${x.we?'we':''}${x.i===todayIdx&&inRange?' today':''}"><td class="d">${String(x.dd).padStart(2,'0')} ${DOW[x.dow]}</td>${x.oc.map((n,c)=>{const g=gs.has(c)?'gs ':'';if(!n)return c===0?`<td class="${g}gap">MISSING</td>`:`<td class="${g}"></td>`;return `<td class="${g}n${isPerson(n)&&leaveOf(n,x.d).length?' lv':''}">${esc(n==='NEURO'?'NEURO':canon(n))}</td>`}).join('')}</tr>`).join('')}</tbody></table></div>`;
+  return `<div class="tablewrap"><table class="rota">${head}<tbody>${ms.map(x=>`<tr class="${x.we?'we':''}${x.i===todayIdx&&inRange?' today':''}"><td class="d">${String(x.dd).padStart(2,'0')} ${DOW[x.dow]}</td>${x.oc.map((n,c)=>{const g=gs.has(c)?'gs ':'';if(!n)return c===0?`<td class="${g}gap">MISSING</td>`:`<td class="${g}"></td>`;return `<td class="${g}n${isPerson(n)&&leaveOf(n,x.d).length?' lv':''}">${editable(x.i,K_OF_COL(c),n,esc(n==='NEURO'?'NEURO':canon(n)))}</td>`}).join('')}</tr>`).join('')}</tbody></table></div>`;
 }
 function gridMorning(ms){
   const head=`<thead><tr><th class="d" rowspan="2">Date</th><th class="grp gs" colspan="2" style="${cv('mc')}">Morning call</th><th class="grp gs" style="${cv('tr')}">Trauma O.T.</th><th class="grp gs" colspan="3" style="${cv('sb')}">Standby &amp; Help</th></tr><tr><th class="gs">Junior</th><th>Senior</th><th class="gs">Pair</th><th class="gs">1</th><th>2</th><th>3</th></tr></thead>`;
-  const td=(n,g,iso)=>n?`<td class="${g}n${isPerson(n)&&leaveOf(n,iso).length?' lv':''}">${esc(n==='ROTATOR'?'ROTATOR ?':canon(n))}</td>`:`<td class="${g}"></td>`;
-  return `<div class="tablewrap"><table class="rota">${head}<tbody>${ms.map(x=>{const [j,s,t,sb]=x.mo;return x.we?`<tr class="we"><td class="d">${String(x.dd).padStart(2,'0')} ${DOW[x.dow]}</td><td class="gs" colspan="6" style="text-align:left;color:var(--faint)">No morning duties</td></tr>`:`<tr class="${x.i===todayIdx&&inRange?'today':''}"><td class="d">${String(x.dd).padStart(2,'0')} ${DOW[x.dow]}</td>${td(j,'gs ',x.d)}${td(s,'',x.d)}<td class="gs n">${t.map(canon).join(' / ')}</td>${td(sb[0],'gs ',x.d)}${td(sb[1],'',x.d)}${td(sb[2],'',x.d)}</tr>`}).join('')}</tbody></table></div>`;
+  const td=(n,g,iso,i,k)=>n?`<td class="${g}n${isPerson(n)&&leaveOf(n,iso).length?' lv':''}">${editable(i,k,n,esc(n==='ROTATOR'?'ROTATOR ?':canon(n)))}</td>`:`<td class="${g}"></td>`;
+  return `<div class="tablewrap"><table class="rota">${head}<tbody>${ms.map(x=>{const [j,s,t,sb]=x.mo;return x.we?`<tr class="we"><td class="d">${String(x.dd).padStart(2,'0')} ${DOW[x.dow]}</td><td class="gs" colspan="6" style="text-align:left;color:var(--faint)">No morning duties</td></tr>`:`<tr class="${x.i===todayIdx&&inRange?'today':''}"><td class="d">${String(x.dd).padStart(2,'0')} ${DOW[x.dow]}</td>${td(j,'gs ',x.d,x.i,'mcj')}${td(s,'',x.d,x.i,'mcs')}<td class="gs n">${t.map(n=>editable(x.i,'tr',n,esc(canon(n)))).join(' / ')}</td>${td(sb[0],'gs ',x.d,x.i,'sb')}${td(sb[1],'',x.d,x.i,'sb')}${td(sb[2],'',x.d,x.i,'sb')}</tr>`}).join('')}</tbody></table></div>`;
 }
 
 // ---------- Me ----------
@@ -551,7 +574,7 @@ function viewMe(){
   const months=[...new Set(days.map(d=>d.d.slice(0,7)))];
   return `${topbar('My schedule',esc(state.me),`<div class="note">${GRADE_NAME[st.g]}${firm?` · Firm: ${esc(firm.lead)}`:''}${DEMO.coordinators.includes(state.me)?' · Rota coordinator':''} · <button class="note" style="border:0;background:none;padding:0;text-decoration:underline" data-pickme>Change name</button></div>${months.length>1?monthTabs():''}`)}
   <div class="stats">${stat('oc',`On-calls in ${MON[+month.slice(5)-1]}`)}${stat('we','Fri / Sat on-calls')}${stat('mo','Morning duties')}</div>
-  <p class="note" style="margin:6px 2px 0">Tap a number to list those duties.</p>
+  <p class="note" style="margin:6px 2px 0">Tap a number to list those duties. Tap a duty to see the whole team that day.</p>
   <button class="btn block" style="margin-top:12px" data-leave>Apply for leave</button>
   ${myLeave.length?`<div class="section"><h2>My leave requests</h2>${myLeave.map(r=>leaveCard(r)).join('')}</div>`:''}
   ${lv.map(l=>`<div class="alert ok" style="margin-top:10px"><span class="dot"></span><div><b>Leave</b> ${l.s.slice(8)}/${l.s.slice(5,7)} – ${l.e.slice(8)}/${l.e.slice(5,7)}${list.some(d=>leaveOf(state.me,days[d.i].d).length)?' · <b>some duties fall in it</b>':''}</div></div>`).join('')}
@@ -694,6 +717,8 @@ function adminRequests(){
     <div style="display:flex;gap:8px"><button class="btn primary" style="flex:1" data-approve="${esc(r.id)}">Approve</button><button class="btn" style="flex:1" data-reject="${esc(r.id)}">Reject</button></div></div>`;
   return `${pend.length?`<div class="list">${pend.map(card).join('')}</div>`:'<div class="alert ok"><span class="dot"></span><div>No requests waiting.</div></div>'}
   <p class="note">Approving writes the change into the Google Sheet (both cells for a swap), only if the cells still show the old names; otherwise nothing is written and you are told. You can also decide in the Sheet: Requests tab → Status column.</p>
+  ${(state.changes||[]).length?`<div class="section"><h2>Direct changes by coordinators</h2><div class="card note" style="font-size:13.5px;line-height:1.7">${state.changes.map(o=>`${esc(o.Date)} · ${esc(o.Duty)}: <b>${esc(o.Doctor)}</b> → <b>${esc(o['Other doctor']||'removed')}</b>${o.Note?` · ${esc(o.Note)}`:''}`).join('<br>')}</div></div>`:''}
+  <p class="note">To change or remove someone without a swap: Rota → Spreadsheet → tap the name.</p>
   ${done.length?`<div class="section"><h2>Decided</h2>${done.map(r=>`<div class="card"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(r.from)} → ${esc(r.to)}</b><span class="badge" style="--c:var(--${r.status==='approved'?'ok':'alert'});--c-s:var(--${r.status==='approved'?'ok':'alert'}-soft)">${r.status==='approved'?'APPROVED':'NOT APPROVED'}</span></div><div class="note" style="margin-top:4px">${r.k?DUTY[r.k].label:esc(r.dutyLabel)} · ${fmtD(r.d)}${r.back?` ⇄ ${r.back.k?DUTY[r.back.k].label:esc(r.back.dutyLabel)} · ${fmtD(r.back.d)}`:''}</div>${r.result?`<div class="note" style="margin-top:6px;${/^⚠/.test(r.result)?'color:var(--warn);font-weight:600':''}">${esc(r.result)}</div>`:''}</div>`).join('')}</div>`:''}`;
 }
 function adminStaff(){
@@ -771,31 +796,313 @@ function personSheet(n){
   <div class="section" style="margin-top:16px"><h2>Next duties</h2><div class="list">${next.map(d=>`<button class="item" style="${cv(DUTY[d.k].c)}" data-goto="${d.i}"><span class="when"><b>${days[d.i].dd}</b>${DOW[days[d.i].dow]}</span><span class="what"><b>${DUTY[d.k].label}</b><small>${MON[days[d.i].m-1]}${d.detail?' · '+esc(d.detail):''}</small></span>${tag(d.k)}</button>`).join('')||'<p class="none">None scheduled.</p>'}</div></div>
   <p class="note">Contact details are private and appear only when the person chooses to share them.</p>`);
 }
-// Swap: after choosing a colleague, choose which of their duties you take in return.
+// Swap: 1) pick the colleague (All / Consultants / Seniors / Juniors + search), 2) pick exactly which of their duties you take.
+const SWAP_GROUPS=[['all','All',null],['cons','Consultants',['consultant']],['sen','Seniors',['senior','transitional']],['jun','Juniors',['junior']]];
+const rotaOf=k=>['mcj','mcs','tr','sb'].includes(k)?'mo':'oc';
+function swapSheet(i,k){
+  const g=STAFF[state.me].g,grp=g==='consultant'?'cons':['senior','transitional'].includes(g)?'sen':g==='junior'?'jun':'all';
+  window._swap={i,k,kind:'exchange',to:null,back:null,grp,q:''};
+  openSheet(`<div style="display:flex;justify-content:space-between;gap:10px"><div><h3>Swap: ${DUTY[k].label}</h3><div class="sub">Your duty · ${fmtLong(i)}</div></div><button class="iconbtn" data-close aria-label="Close">${NAV.close}</button></div>
+  <div class="section" style="margin-top:14px;gap:8px"><h2>1 · Who do you swap with?</h2>
+    <div class="seg" id="swgrp">${SWAP_GROUPS.map(([k2,l])=>`<button aria-pressed="${k2===grp}" data-swgrp="${k2}">${l}</button>`).join('')}</div>
+    <input class="search" id="swq" type="search" placeholder="Search a name" autocomplete="off" aria-label="Search a name">
+    <div class="list" id="swlist" style="max-height:32vh;overflow:auto"></div></div>
+  <div id="backbox"></div>
+  <div class="pin"><div class="steps"><span class="cur"><i></i>You send</span><span><i></i>Coordinator checks with both of you</span><span><i></i>Rota updated</span></div>
+  <p class="note" style="margin:0">Goes to the rota coordinators. Nothing changes until they approve.</p>
+  <button class="btn primary block" id="sendswap" disabled>Choose a colleague</button></div>`);
+  swapList();swapUI();
+}
+function swapList(){
+  const s=window._swap,box=document.getElementById('swlist');if(!box)return;
+  const G=SWAP_GROUPS.find(g=>g[0]===s.grp),r=rotaOf(s.k);
+  const ppl=DEMO.staff.filter(p=>p.status!=='inactive'&&p.status!=='unknown'&&p.n!==state.me&&(!G[2]||G[2].includes(p.g))&&(!s.q||p.n.includes(s.q)||(p.full||'').toUpperCase().includes(s.q))).sort((a,b)=>a.n.localeCompare(b.n));
+  box.innerHTML=ppl.map(p=>{const busy=duties(s.i).some(d=>d.rota===r&&isPerson(d.n)&&canon(d.n)===p.n),lv=leaveOf(p.n,days[s.i].d).length,up=myDuties(p.n).filter(d=>d.i>=todayIdx).length;
+    return `<button class="opt" data-to="${esc(p.n)}" aria-pressed="${s.to===p.n}"><b>${esc(p.n)}</b><span class="note">${GRADE_NAME[p.g]} · ${lv?'on leave':busy?'on duty':'free'} ${days[s.i].dd} ${MON[days[s.i].m-1]} · ${up} upcoming</span></button>`}).join('')||'<p class="none">No one matches.</p>';
+}
 function swapUI(){
   const s=window._swap,box=document.getElementById('backbox'),b=document.getElementById('sendswap');if(!box||!b)return;
-  if(s.kind!=='exchange'||!s.to){box.innerHTML='';s.back=null;b.disabled=!s.to;b.textContent=s.to?'Send to '+s.to:'Choose a colleague';return}
-  const theirs=myDuties(s.to).filter(d=>d.i>=todayIdx&&!(d.i===s.i&&d.k===s.k)).filter(d=>{const x=days[d.i];
-    return !duties(d.i).some(y=>y.rota===d.rota&&isPerson(y.n)&&canon(y.n)===state.me)&&!leaveOf(state.me,x.d).length});
-  box.innerHTML=`<h2 style="margin-top:14px">${esc(s.to)}’s duty you take in return · ${theirs.length}</h2><div class="list">${theirs.map(d=>`<button class="opt" data-back="${d.i}|${d.k}" aria-pressed="${!!s.back&&s.back.i===d.i&&s.back.k===d.k}"><b>${fmt(d.i)}</b><span class="note">${DUTY[d.k].label}${d.detail?' · '+esc(d.detail):''}</span></button>`).join('')||'<p class="none">No upcoming duty of theirs that you are free for. Ask for cover instead.</p>'}</div>`;
-  b.disabled=!s.back;b.textContent=s.back?`Send swap with ${s.to}`:'Choose their duty';
+  if(!s.to){box.innerHTML='';b.disabled=true;b.textContent='Choose a colleague';return}
+  const r=rotaOf(s.k),x=days[s.i];
+  const busyThem=duties(s.i).some(d=>d.rota===r&&isPerson(d.n)&&canon(d.n)===s.to);
+  const theirs=myDuties(s.to).filter(d=>d.i>=todayIdx&&!(d.i===s.i&&d.k===s.k)).map(d=>{const y=days[d.i];
+    const meBusy=duties(d.i).some(z=>z.rota===d.rota&&isPerson(z.n)&&canon(z.n)===state.me),meLeave=leaveOf(state.me,y.d).length;
+    return {...d,why:meLeave?'you are on leave':meBusy?'you are already on duty':''}});
+  box.innerHTML=`<div class="section" style="gap:8px"><h2>2 · Which of ${esc(s.to)}’s duties do you take?</h2>
+    ${busyThem?`<div class="alert"><span class="dot"></span><div>${esc(s.to)} is already on duty on ${fmt(s.i)}. The coordinator will check this.</div></div>`:''}
+    <div class="list">${theirs.map(d=>`<button class="opt" data-back="${d.i}|${d.k}" aria-pressed="${!!s.back&&s.back.i===d.i&&s.back.k===d.k}" ${d.why?'disabled':''}><b>${fmt(d.i)}</b><span class="note">${DUTY[d.k].label} · ${d.rota==='oc'?'On-call':'Morning'}${d.why?' · '+d.why:''}</span></button>`).join('')||`<p class="none">${esc(s.to)} has no upcoming duties.</p>`}</div></div>`;
+  if(s.back){const y=days[s.back.i];b.disabled=false;b.textContent=`Send: you take ${s.to}’s ${DUTY[s.back.k].tag} on ${fmt(s.back.i)}`}
+  else{b.disabled=true;b.textContent='Choose their duty'}
 }
-function swapSheet(i,k){
-  const x=days[i],mine=myDuties(state.me).find(d=>d.i===i&&d.k===k);
-  const g=STAFF[state.me].g,peers=DEMO.staff.filter(s=>s.status!=='inactive'&&s.n!==state.me&&(s.g===g||(g==='senior'&&s.g==='transitional')||(g==='transitional'&&['senior','junior'].includes(s.g))||(g==='junior'&&s.g==='transitional')));
-  const busy=new Set(duties(i).filter(d=>isPerson(d.n)&&(d.rota===mine.rota)).map(d=>canon(d.n)));
-  const free=peers.filter(p=>!busy.has(p.n)&&!leaveOf(p.n,x.d).length);
-  window._swap={i,k,kind:'cover',to:null};
-  openSheet(`<div style="display:flex;justify-content:space-between;gap:10px"><div><h3>${DUTY[k].label}</h3><div class="sub">${fmtLong(i)}</div></div><button class="iconbtn" data-close aria-label="Close">${NAV.close}</button></div>
-  <div class="section" style="margin-top:14px"><div class="seg" id="swapkind"><button aria-pressed="true" data-kind="cover">Ask for cover</button><button aria-pressed="false" data-kind="exchange">Swap duties</button></div>
-  <h2>Free that ${mine.rota==='oc'?'night':'morning'} · ${free.length}</h2><div class="list">${free.map(p=>`<button class="opt" data-to="${esc(p.n)}"><b>${esc(p.n)}</b><span class="note">${GRADE_NAME[p.g]}</span></button>`).join('')}</div><div id="backbox"></div>
-  </div><div class="pin"><div class="steps"><span class="cur"><i></i>You send</span><span><i></i>Coordinator checks with both of you</span><span><i></i>Rota updated</span></div>
-  <p class="note" style="margin:0">Goes to the rota coordinators (Ayman, Yousif Ali). Nothing changes until they approve.</p>
-  <button class="btn primary block" id="sendswap" disabled>Choose a colleague</button></div>`);
+
+// ---------- 7 AM handover ----------
+const dm=iso=>`${+iso.slice(8)} ${MONL[+iso.slice(5,7)-1]}`;
+const coverage=iso=>`${dm(iso)}, 7:00 AM – ${dm(addDays(iso,1))}, 7:00 AM`;
+const nowLabel=()=>TODAY===bahrainNow(new Date()).date?'TODAY':'NOW';
+function refreshActive(){
+  const nt=onCallDateAt(new Date());
+  if(nt===TODAY)return false;
+  const old=todayIdx;
+  TODAY=nt;todayIdx=idxOf[TODAY]??(TODAY<days[0].d?0:days.length-1);inRange=idxOf[TODAY]!==undefined;
+  alertCount=upcoming(CHK.gap).length+upcoming(CHK.leave).length+upcoming(CHK.unres).length+upcoming(CHK.grade).length;
+  if(state.date===old){state.date=todayIdx;state.month=days[todayIdx].d.slice(0,7)}
+  render();return true;
+}
+function activeBanner(i){
+  const x=days[i],active=i===todayIdx&&inRange,cal=bahrainNow(new Date()).date;
+  return `<div class="oncallnow${active?'':' other'}" role="status"><div class="eyebrow">${active?'Active on-call team':'On-call team'}</div>
+    <b>${active?'Active On-Call Team':'On-Call Team'} — ${dm(x.d)}</b>
+    <span>Coverage: ${coverage(x.d)}</span>
+    ${active&&cal!==x.d?`<span class="small">It is after midnight (${dm(cal)}). The ${dm(x.d)} team stays on call until 7:00 AM.</span>`:''}
+    ${!active&&inRange?`<button class="btn" data-goto="${todayIdx}" style="margin-top:8px;min-height:36px;padding:6px 12px">Show the active team (${dm(TODAY)})</button>`:''}
+    ${!inRange?`<span class="small">No rota is loaded for the active on-call date (${dm(TODAY)}). Please verify with the on-call senior/consultant.</span>`:''}</div>`;
+}
+
+// ---------- Me: who is working with me ----------
+function teamRows(i,rota){
+  const x=days[i],oc=x.oc,[j,s,t,sb]=x.mo,iso=x.d;
+  const row=(k,label,list)=>{const l=list.filter(Boolean);return l.length?`<div class="duty" style="${cv(DUTY[k].c)}">${tag(k)}<div><div class="lbl">${label}</div><div class="people">${l.map(n=>chip(n,iso,{showGrade:k!=='cons'})).join('')}</div></div></div>`:''};
+  if(rota==='oc'){
+    const cons=SUBS.map(([k,lab],c)=>oc[c]?row('cons',c===0?'General · on call':lab,[oc[c]]):'').join('');
+    const none=SUBS.filter((x,c)=>c>0&&!oc[c]).map(x=>x[1]);
+    return `${cons}${!oc[0]?'<div class="alert bad"><span class="dot"></span><div><b>No General consultant</b> on the rota</div></div>':''}${none.length?`<p class="note" style="margin:2px 0 6px">Not covered: ${none.join(', ')}</p>`:''}
+      ${row('tl','Team Leader',[oc[7]])}${row('ot','Operation Theatre',[oc[8],oc[9]])}${row('wards','Wards',[oc[10]])}${row('ae','A&E',oc.slice(11,15))}${row('interns','Interns',[oc[15]])}`;
+  }
+  if(x.dow>4)return '<p class="none">No morning duties on Fridays and Saturdays.</p>';
+  return `${row('mcj','Junior morning call',[j])}${row('mcs','Senior morning call',[s])}${t.length?row('tr','Trauma O.T.',t):''}${row('sb','Standby & Help',sb)}`;
+}
+function dutySheet(i,k){
+  const rota=['mcj','mcs','tr','sb'].includes(k)?'mo':'oc',x=days[i];
+  const canSwap=state.me&&i>=todayIdx&&myDuties(state.me).some(d=>d.i===i&&d.k===k);
+  openSheet(`<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><div><h3>${rota==='oc'?'On-call team':'Morning team'} · ${fmtLong(i)}</h3>
+    <div class="sub">${rota==='oc'?`Coverage: ${coverage(x.d)}`:`Morning of ${fmtLong(i)}`} · your duty: ${DUTY[k].label}</div></div><button class="iconbtn" data-close aria-label="Close">${NAV.close}</button></div>
+    <div class="card" style="margin-top:14px">${teamRows(i,rota)}</div>
+    ${canSwap?`<div class="pin"><button class="btn primary block" data-swapfrom="${i}|${k}">${NAV.swap} Request a swap</button></div>`:''}`);
+}
+
+// ---------- On-call resources ----------
+const RES_TABS=[['trauma','Trauma allocation'],['dpp','DPP']];
+// Department rule (Yusuf, 31 Oct 2026): "if subspeciality is not covered on a day, it goes to the general on-call".
+// Set a subspecialty to false to stop the fallback for it (the case then shows "Please verify").
+const FALLBACK={foot:true,upper:true,spine:true,peds:true,pelvis:true,hipknee:true};
+const isPedsLine=it=>it.s==='peds'||it.to==='peds';
+function allocate(it){
+  const sec=TRAUMA_SECTIONS[it.s],spec=it.to==='general'?'gen':it.to==='peds'?'peds':it.s;
+  const a={spec,specName:TRAUMA_SECTIONS[spec].label,type:it.to==='general'?'General':'Subspecialty',
+    source:`Section ${sec.n} · ${sec.label} · page ${sec.page}`,verify:false,name:null,why:'',gen:null,fallback:false,ageNote:''};
+  if(!inRange){a.verify=true;a.why='No rota is loaded for the active on-call date.';return a}
+  const oc=days[todayIdx].oc,g=oc[0]&&isPerson(oc[0])?canon(oc[0]):null;
+  if(spec==='gen'){if(!g){a.verify=true;a.why='No General consultant is on the active rota.';return a}a.name=g;return a}
+  const n=oc[SUB_COL[spec]],lab=TRAUMA_SECTIONS[spec].label;a.gen=g;
+  if(n==='NEURO'){a.neuro=true;a.name='Neurosurgery';a.why='Spine is covered by Neurosurgery on the active rota, so spine admissions go to Neurosurgery (department rule).';return a}
+  if(!n||!isPerson(n)){
+    if(FALLBACK[spec]&&g){a.name=g;a.fallback=true;a.why=`${lab} is not covered on the active rota, so the case goes to the General on-call consultant (department rule).`;return a}
+    a.verify=true;a.why=`${lab} is not covered on the active rota.`;return a}
+  a.name=canon(n);return a;
+}
+function decisionHtml(a,showAge){
+  const who=a.neuro?'<b>Neurosurgery on call</b>':a.name?`${chip(a.name,TODAY)}`:'<span class="small">Not assigned</span>';
+  const spec=a.neuro?'Neurosurgery <span class="small">(covering Spine)</span>':a.fallback?`General Orthopedics <span class="small">(${esc(a.specName)} not covered)</span>`:esc(a.specName);
+  const type=a.neuro?'Subspecialty → Neurosurgery (covering Spine today)':a.fallback?'Subspecialty → General (not covered today)':a.type;
+  return `<div class="tdec ${a.verify?'verify':'ok'}">
+    ${a.verify?`<b>Please verify with the on-call senior/consultant</b><span>${esc(a.why)}</span>`:''}
+    <dl class="tfacts">
+      <dt>Responsible speciality</dt><dd>${spec}</dd>
+      <dt>On-call consultant</dt><dd>${who}${a.verify&&a.gen?` <span class="small">General on call: ${esc(a.gen)} (for information)</span>`:''}</dd>
+      <dt>Allocation</dt><dd>${type}</dd>
+      <dt>Source</dt><dd>${esc(a.source)}</dd>
+    </dl>
+    ${(a.fallback||a.neuro)&&!a.verify?`<span class="small">${esc(a.why)}</span>`:''}
+  </div>`;
+}
+// Search: every word must match the start of a word in the diagnosis, its search words or its section.
+const STOP=new Set(['fracture','fractures','fx','of','the','and','with','a','an','in','injury','injuries','#']);
+const SPELL={paediatric:'pediatric',paediatrics:'pediatrics',paeds:'pediatric',peds:'pediatric',children:'child',kids:'child',kid:'child',tumour:'tumor',tumours:'tumor',
+  calcaneum:'calcaneus',oesteomyelitis:'osteomyelitis',haematoma:'hematoma',ankles:'ankle',hips:'hip',knees:'knee',wrists:'wrist',elbows:'elbow',shoulders:'shoulder',feet:'foot',toes:'toe'};
+const words=s=>s.toLowerCase().replace(/#/g,' ').replace(/[^a-z0-9&\s/-]/g,' ').split(/[\s/-]+/).filter(Boolean).map(w=>SPELL[w]||w);
+function traumaMatches(q){
+  const toks=words(q).filter(w=>!STOP.has(w));
+  if(!toks.length)return null;
+  const hit=it=>{const hay=words(`${it.t} ${it.k} ${TRAUMA_SECTIONS[it.s].label}`);return toks.every(t=>hay.some(h=>h.startsWith(t)))};
+  return TRAUMA_RULES.filter(hit);
+}
+function activeTeamCard(){
+  if(!inRange)return `<div class="alert bad"><span class="dot"></span><div><b>No rota loaded for the active on-call date (${dm(TODAY)}).</b> Please verify with the on-call senior/consultant.</div></div>`;
+  const oc=days[todayIdx].oc;
+  const subs=SUBS.slice(1).map(([k,lab],c)=>{const n=oc[c+1];return `<span class="subst${n?'':' off'}">${esc(lab)}: <b>${n?esc(n==='NEURO'?'Neurosurgery':canon(n)):'not covered'}</b></span>`}).join('');
+  return `<div class="oncallnow"><div class="eyebrow">Active on-call team</div><b>Active On-Call Team — ${dm(TODAY)}</b><span>Coverage: ${coverage(TODAY)}</span>
+    <span class="tgen">General on call: ${oc[0]?`<b>${esc(canon(oc[0]))}</b>`:'<b style="color:var(--alert)">none on the rota</b>'}</span><div class="substrip">${subs}</div></div>`;
+}
+function traumaView(){
+  const doc=(DEMO.docs||{}).trauma,stale=doc&&doc.sha256&&doc.sha256!==TRAUMA_SOURCE.sha256;
+  const scope=state.scope||'all',inScope=it=>scope==='all'||(scope==='peds')===isPedsLine(it);
+  const found=traumaMatches(state.tq||''),isList=found===null,res=(isList?TRAUMA_RULES:found).filter(inScope);
+  const groups=Object.keys(TRAUMA_SECTIONS).map(s=>[s,res.filter(it=>it.s===s)]).filter(g=>g[1].length);
+  const item=it=>`<div class="trow"><div><div class="tlabel">Diagnosis</div><div class="tt">${esc(it.t)}</div></div>${decisionHtml(allocate(it),!isList)}</div>`;
+  const notFound=()=>{const child=scope==='peds';
+    const it=TRAUMA_RULES.find(x=>x.t.startsWith(child?'Other trauma not specified':'Any injuries not specified'));const a=allocate(it);
+    return `<div class="card"><b>“${esc(state.tq)}” is not listed in the guide.</b><p class="note" style="margin:6px 0">${child?'For patients below 14 the guide says: “Other trauma not specified in patients below 14 years old” → Pediatrics.':'The guide says: “Any injuries not specified under the subspecialties below” → General. Try other words (e.g. “ankle”, “NOF”, “scaphoid”) before relying on this.'}</p>
+      <div class="tdec verify"><b>Please verify with the on-call senior/consultant</b><span>The search did not find this diagnosis, so the app does not assign a specialty.</span>${a.name?`<span class="small">The guide's catch-all on the active rota: ${esc(a.fallback?'General Orthopedics':a.specName)} – ${esc(a.name)}</span>`:''}</div></div>`};
+  const pdfBtn=`<button class="btn block" data-restab="tpdf" style="margin-top:10px">View Original PDF</button>`;
+  return `${activeTeamCard()}${pdfBtn}
+  ${stale?`<div class="alert bad" style="margin-top:10px"><span class="dot"></span><div><b>The uploaded trauma guide is a different version</b> (${esc(doc.version)}) from the one these rules were taken from (result ${TRAUMA_SOURCE.result}). The rules below may be out of date. Please verify with the on-call senior/consultant, and ask the app maintainer to update the rules.</div></div>`:''}
+  <div class="section" style="margin-top:12px;gap:8px">
+    <div class="seg" role="group" aria-label="Show">${[['all','All'],['adult','Adult'],['peds','Pediatric']].map(([k,l])=>`<button aria-pressed="${scope===k}" data-scope="${k}">${l}</button>`).join('')}</div>
+    <input class="search" id="tq" type="search" placeholder="Search a diagnosis, e.g. ankle, NOF, scaphoid" value="${esc(state.tq||'')}" autocomplete="off" aria-label="Search diagnosis">
+    <span class="note">${isList?`${res.length} lines`:`${res.length} matching line${res.length===1?'':'s'}`} across ${groups.length} section${groups.length===1?'':'s'}${scope==='all'?'':scope==='peds'?' · Pediatric lines only':' · Adult lines only'}</span>
+  </div>
+  ${!isList&&!res.length?notFound():''}
+  <div id="tresults">${groups.map(([s,its])=>`<div class="section"><h2>${TRAUMA_SECTIONS[s].n}. ${esc(TRAUMA_SECTIONS[s].label)}${TRAUMA_SECTIONS[s].who?` <span class="note" style="text-transform:none;letter-spacing:0">(${esc(TRAUMA_SECTIONS[s].who)})</span>`:''}</h2><div class="card tlist">${its.map(item).join('')}</div></div>`).join('')}</div>
+  <div class="card note" style="margin-top:16px;font-size:13px;line-height:1.6">Source: <b>${esc(TRAUMA_SOURCE.title)}</b>, Dr Ali Redha Karashi, ${TRAUMA_SOURCE.date} (voting result ${TRAUMA_SOURCE.result}). All 105 lines are copied from the document with the tick as marked (typos corrected, “Pediatrics” added to unlabelled lines of the Pediatrics section). Department rules: when a subspecialty is not covered on the active rota, the case goes to the General on-call consultant; when Neurosurgery covers Spine, spine admissions go to Neurosurgery. The consultant shown always comes from the active on-call team (7 AM to 7 AM).</div>`;
+}
+
+// Documents (stored in the Google Sheet; shown exactly as uploaded)
+const DOC_INFO={dpp:{title:'DPP — Admission allocation (official)',hint:'February 2026'},trauma:{title:'Trauma Cases Allocation (departmental)',hint:'Result 10-7-25'}};
+const docBytes={};let docErr={};
+const b64ToBytes=b=>{const s=atob(b),u=new Uint8Array(s.length);for(let i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return u};
+function bytesToB64(u){let s='';for(let i=0;i<u.length;i+=32768)s+=String.fromCharCode.apply(null,u.subarray(i,i+32768));return btoa(s)}
+async function sha256(u){const h=await crypto.subtle.digest('SHA-256',u);return [...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,'0')).join('')}
+async function loadDoc(id){
+  const meta=(DEMO.docs||{})[id];if(!meta)return null;
+  if(docBytes[id]&&docBytes[id].sha===meta.sha256)return docBytes[id].u;
+  let b64=null;
+  try{const c=JSON.parse(localStorage.getItem('orthoLive.doc.'+id)||'null');if(c&&c.sha256===meta.sha256)b64=c.data}catch(e){}
+  if(!b64){const r=await apiGet({action:'doc',id});b64=r.data;try{localStorage.setItem('orthoLive.doc.'+id,JSON.stringify({sha256:r.sha256,data:b64}))}catch(e){}}
+  const u=b64ToBytes(b64),h=await sha256(u);
+  if(h!==meta.sha256)throw new Error('The downloaded file does not match the uploaded one (fingerprint check failed). Try again.');
+  docBytes[id]={u,sha:h};return u;
+}
+function docView(id){
+  const meta=(DEMO.docs||{})[id],info=DOC_INFO[id];
+  const kb=n=>n>1048576?(n/1048576).toFixed(1)+' MB':Math.round(n/1024)+' KB';
+  const up=state.admin&&state.adminLoaded?`<div class="card upl"><b>${meta?'Upload a newer version':'Upload the PDF'}</b><span class="note">Coordinators only. The file is stored unchanged in the Google Sheet and replaces the current version for everyone.</span>
+    <div class="field"><label for="up_ver">Version / date as written on the document</label><input id="up_ver" placeholder="e.g. ${esc(info.hint)}" value="${meta?'':esc(info.hint)}"></div>
+    <div class="field"><label for="up_file">PDF file</label><input id="up_file" type="file" accept="application/pdf,.pdf"></div>
+    <button class="btn primary block" data-upload="${id}">Upload</button></div>`:'';
+  if(!meta)return `<div class="card"><b>${esc(info.title)}</b><p class="note" style="margin:6px 0 0">Not uploaded yet. ${state.admin?'Upload it below.':'A coordinator needs to upload it (Admin → On-call resources).'}</p></div>${up}`;
+  const ready=!!(docBytes[id]&&docBytes[id].sha===meta.sha256);
+  return `<div class="card doccard"><div class="eyebrow">Current version</div><h2 style="margin:2px 0 4px;font-size:20px;text-transform:none;letter-spacing:0;color:var(--fg)">${esc(meta.version)}</h2>
+    <b>${esc(info.title)}</b><span class="note">${esc(meta.filename)} · ${kb(+meta.size)} · uploaded ${esc(meta.uploaded)}</span>
+    <span class="note" id="docok">${ready?`✓ Unchanged since upload (fingerprint ${meta.sha256.slice(0,12)}…)`:docErr[id]?'':'Loading…'}</span>
+    ${id==='dpp'?'<span class="small">Official document, shown exactly as uploaded. The app does not interpret it.</span>':''}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px"><button class="btn" data-docopen="${id}" ${ready?'':'disabled'}>Open full screen</button><button class="btn" data-docdl="${id}" ${ready?'':'disabled'}>Download</button></div></div>
+  ${docErr[id]?`<div class="alert bad" style="margin-top:10px"><span class="dot"></span><div>${esc(docErr[id])} <button class="btn" data-docretry="${id}" style="margin-top:6px;min-height:34px;padding:4px 12px">Try again</button></div></div>`:''}
+  <div class="pdftools" ${ready?'':'hidden'}><button class="iconbtn" data-zoom="-1" aria-label="Zoom out">−</button><span class="mono note" id="pdfzoom">${Math.round(viewer.zoom*100)}%</span><button class="iconbtn" data-zoom="1" aria-label="Zoom in">+</button>
+    <input class="search" id="pq" type="search" placeholder="Search in the PDF" value="${esc(state.pq||'')}" aria-label="Search in the PDF"><button class="iconbtn" data-hit="-1" aria-label="Previous match">‹</button><span class="mono note" id="pdfcount"></span><button class="iconbtn" data-hit="1" aria-label="Next match">›</button></div>
+  <div id="pdfpages" data-doc="${id}">${ready?'':docErr[id]?'':'<div class="boot" style="margin-top:6vh"><div class="spin"></div><p class="note">Loading the PDF…</p></div>'}</div>
+  ${up}`;
+}
+function viewResources(){
+  const tab=state.resTab||sess('orthoResTab')||'trauma';
+  const seg=`<div class="seg">${RES_TABS.map(([k,l])=>`<button aria-pressed="${tab===k||(tab==='tpdf'&&k==='trauma')}" data-restab="${k}">${l}</button>`).join('')}</div>`;
+  const body=tab==='dpp'?docView('dpp'):tab==='tpdf'?`<button class="btn" data-restab="trauma" style="margin-bottom:10px">‹ Back to the allocation guide</button>${docView('trauma')}`:traumaView();
+  return `${topbar('On-call resources',tab==='dpp'?'DPP':'Trauma case allocation',seg)}${body}`;
+}
+
+// PDF viewer (pdf.js, loaded only when a document is opened)
+const PDFJS='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/';
+let pdfLibP=null;
+function pdfLib(){return pdfLibP||(pdfLibP=new Promise((ok,no)=>{const s=document.createElement('script');s.src=PDFJS+'pdf.min.js';
+  s.onload=()=>{window.pdfjsLib.GlobalWorkerOptions.workerSrc=PDFJS+'pdf.worker.min.js';ok(window.pdfjsLib)};
+  s.onerror=()=>{pdfLibP=null;s.remove();no(new Error('The PDF viewer could not load (no internet?). Use Download or Open full screen.'))};document.head.appendChild(s)}))}
+const viewer={id:null,sha:null,doc:null,zoom:1,text:null,hits:[],hit:-1};
+async function mountViewer(){
+  const box=document.getElementById('pdfpages');if(!box)return;
+  const id=box.dataset.doc,meta=(DEMO.docs||{})[id];if(!meta)return;
+  if(!(docBytes[id]&&docBytes[id].sha===meta.sha256)){
+    if(docErr[id])return;                       // shown with a Try again button
+    try{await loadDoc(id)}catch(e){docErr[id]=e.message||String(e)}
+    if(document.getElementById('pdfpages'))render();   // shows the ready view (or the error); render mounts again
+    return;
+  }
+  try{
+    const lib=await pdfLib();
+    if(viewer.id!==id||viewer.sha!==meta.sha256){viewer.doc=await lib.getDocument({data:docBytes[id].u.slice()}).promise;viewer.id=id;viewer.sha=meta.sha256;viewer.text=null;viewer.hits=[];viewer.hit=-1}
+    if(document.getElementById('pdfpages')!==box)return;
+    await drawPages(box);
+    if(state.pq)await pdfSearch(state.pq,false);
+  }catch(e){box.innerHTML=`<div class="alert bad"><span class="dot"></span><div>${esc(e.message||String(e))}</div></div>`}
+}
+async function drawPages(box){
+  const doc=viewer.doc,w=Math.max(260,box.clientWidth-4),dpr=Math.min(window.devicePixelRatio||1,2);
+  const frag=document.createDocumentFragment(),todo=[];
+  for(let p=1;p<=doc.numPages;p++){
+    const page=await doc.getPage(p),base=page.getViewport({scale:1}),scale=w/base.width*viewer.zoom,vp=page.getViewport({scale});
+    const wrap=document.createElement('div');wrap.className='pdfpage';wrap.style.width=vp.width+'px';wrap.style.height=vp.height+'px';wrap.dataset.page=p;wrap._vp=vp;
+    const c=document.createElement('canvas');c.width=Math.floor(vp.width*dpr);c.height=Math.floor(vp.height*dpr);c.style.width=vp.width+'px';c.style.height=vp.height+'px';
+    wrap.appendChild(c);frag.appendChild(wrap);todo.push([page,c,scale*dpr]);
+  }
+  box.innerHTML='';box.appendChild(frag);
+  const z=document.getElementById('pdfzoom');if(z)z.textContent=Math.round(viewer.zoom*100)+'%';
+  for(const [page,c,s] of todo)await page.render({canvasContext:c.getContext('2d'),viewport:page.getViewport({scale:s})}).promise;
+  paintHits();
+}
+async function pdfText(){
+  if(viewer.text)return viewer.text;const out=[];
+  for(let p=1;p<=viewer.doc.numPages;p++){const tc=await (await viewer.doc.getPage(p)).getTextContent();out.push(tc.items.filter(it=>it.str).map(it=>({s:it.str,tr:it.transform,w:it.width,h:it.height})))}
+  return viewer.text=out;
+}
+async function pdfSearch(q,jump=true){
+  q=(q||'').trim().toLowerCase();viewer.hits=[];viewer.hit=-1;
+  if(q.length>=2&&viewer.doc){(await pdfText()).forEach((items,pi)=>items.forEach(it=>{if(it.s.toLowerCase().includes(q))viewer.hits.push({p:pi+1,it})}));if(viewer.hits.length)viewer.hit=0}
+  paintHits();if(jump)gotoHit();
+}
+function paintHits(){
+  document.querySelectorAll('.pdfhit').forEach(e=>e.remove());
+  viewer.hits.forEach((h,n)=>{const wrap=document.querySelector(`.pdfpage[data-page="${h.p}"]`);if(!wrap||!wrap._vp)return;
+    const vp=wrap._vp,[a,b,c,d,e,f]=h.it.tr,ht=h.it.h||Math.hypot(c,d);
+    const p1=vp.convertToViewportPoint(e,f),p2=vp.convertToViewportPoint(e+h.it.w,f+ht);
+    const el=document.createElement('div');el.className='pdfhit'+(n===viewer.hit?' cur':'');
+    Object.assign(el.style,{left:Math.min(p1[0],p2[0])-1+'px',top:Math.min(p1[1],p2[1])-1+'px',width:Math.abs(p2[0]-p1[0])+2+'px',height:Math.abs(p2[1]-p1[1])+2+'px'});wrap.appendChild(el)});
+  const c=document.getElementById('pdfcount');if(c)c.textContent=viewer.hits.length?`${viewer.hit+1}/${viewer.hits.length}`:((state.pq||'').trim().length>1?'0':'');
+}
+function gotoHit(){const el=document.querySelector('.pdfhit.cur');if(el)el.scrollIntoView({block:'center',inline:'center'})}
+function docBlobUrl(id){return URL.createObjectURL(new Blob([docBytes[id].u],{type:'application/pdf'}))}
+async function uploadDoc(id,btn){
+  const f=document.getElementById('up_file').files[0],ver=document.getElementById('up_ver').value.trim();
+  if(!ver){toast('Enter the version or date written on the document.',true);return}
+  if(!f){toast('Choose the PDF file.',true);return}
+  const u=new Uint8Array(await f.arrayBuffer());
+  if(String.fromCharCode(...u.subarray(0,5))!=='%PDF-'){toast('That file is not a PDF.',true);return}
+  if(u.length>20*1048576){toast('The PDF is larger than 20 MB.',true);return}
+  btn.disabled=true;btn.textContent='Uploading…';
+  try{
+    const data=bytesToB64(u),local=await sha256(u);
+    const r=await apiPost({action:'uploadDoc',pw:sess('orthoPw'),id,version:ver,filename:f.name,data});
+    if(r.sha256!==local)throw new Error('The stored file does not match the one you chose. Please upload again.');
+    try{localStorage.setItem('orthoLive.doc.'+id,JSON.stringify({sha256:r.sha256,data}))}catch(e){}
+    await reloadData(`Uploaded: ${esc(ver)}. Everyone now sees this version.`);
+  }catch(e){toast(esc(e.message),true);btn.disabled=false;btn.textContent='Upload'}
+}
+
+// ---------- Coordinators: change or remove a name directly (no swap) ----------
+const editable=(i,k,raw,html)=>state.admin&&state.adminLoaded&&isPerson(raw)?`<button class="cellbtn" data-edit="${i}|${k}|${esc(raw)}" aria-label="Change ${esc(raw)}">${html}</button>`:html;
+const K_OF_COL=c=>c<7?'cons':c===7?'tl':c<10?'ot':c===10?'wards':c<15?'ae':'interns';
+function editSheet(i,k,raw){
+  const x=days[i],c=(x.cells||[]).find(c=>c.k===k&&c.n===raw);
+  if(!c){toast('Could not find this name in the Sheet. Change it in the Google Sheet.',true);return}
+  const order=['consultant','senior','transitional','junior','rotator','intern'];
+  const ppl=DEMO.staff.filter(s=>s.status!=='inactive'&&s.status!=='unknown'&&s.n!==canon(raw)).sort((a,b)=>order.indexOf(a.g)-order.indexOf(b.g)||a.n.localeCompare(b.n));
+  window._edit={i,k,raw,cell:c.cell,to:null};
+  openSheet(`<div style="display:flex;justify-content:space-between;gap:10px"><div><h3>Change ${esc(canon(raw))}</h3><div class="sub">${DUTY[k].label} · ${fmtLong(i)}</div></div><button class="iconbtn" data-close aria-label="Close">${NAV.close}</button></div>
+  <p class="note" style="margin:10px 0 0">Coordinators only. Changes the Google Sheet straight away, with no swap request. Logged in the Requests tab.</p>
+  <div class="section" style="margin-top:12px;gap:10px">
+    <input class="search" id="edq" type="search" placeholder="Search a name" autocomplete="off" aria-label="Search a name">
+    <div class="list" id="edlist" style="max-height:38vh;overflow:auto">${ppl.map(p=>`<button class="opt" data-edto="${esc(p.n)}"><b>${esc(p.n)}</b><span class="note">${GRADE_NAME[p.g]}${duties(i).some(d=>isPerson(d.n)&&canon(d.n)===p.n)?' · already on duty this day':''}</span></button>`).join('')}</div>
+    <div class="field"><label for="ednote">Reason (optional)</label><input id="ednote" maxlength="200" autocomplete="off"></div>
+  </div>
+  <div class="pin" style="display:flex;flex-direction:column;gap:8px"><button class="btn primary block" id="edgo" disabled>Choose who replaces ${esc(canon(raw))}</button>
+  <button class="btn block" id="edremove" style="color:var(--alert);border-color:var(--alert)">Remove ${esc(canon(raw))} from this duty</button></div>`);
+}
+async function doEdit(to,btn){
+  const e=window._edit,x=days[e.i];btn.disabled=true;const old=btn.textContent;btn.textContent='Saving…';
+  try{const r=await apiPost({action:'assign',pw:sess('orthoPw'),cell:e.cell,from:e.raw,to,date:x.d,duty:DUTY[e.k].label,note:(document.getElementById('ednote')||{}).value||''});
+    await reloadData(esc(r.result))}
+  catch(err){toast(esc(err.message),true);btn.disabled=false;btn.textContent=old}
 }
 
 // ---------- shell ----------
-const VIEWS=[['today','Today'],['rota','Rota'],['me','Me'],['team','Team'],['admin','Admin']];
+const VIEWS=[['today','Today'],['rota','Rota'],['me','Me'],['resources','Resources'],['team','Team'],['admin','Admin']];
 const route=()=>{const h=location.hash.slice(1);return VIEWS.some(v=>v[0]===h)?h:'today'};
 function render(){
   const v=route();
@@ -803,7 +1110,8 @@ function render(){
   const shown=VIEWS.filter(([k])=>k!=='admin'||state.admin);
   const links=shown.map(([k,l])=>`<a href="#${k}"${k===v?' aria-current="page"':''}>${NAV[k]}<span>${l}</span>${k==='admin'&&(pend+alertCount)?`<span class="cnt">${pend+alertCount}</span>`:''}</a>`).join('');
   const tb=document.getElementById('tabbar');tb.innerHTML=links;tb.style.gridTemplateColumns=`repeat(${shown.length},1fr)`;document.getElementById('railnav').innerHTML=links;
-  document.getElementById('main').innerHTML=`<div class="view">${({today:viewToday,rota:viewRota,me:viewMe,team:viewTeam,admin:viewAdmin})[v]()}</div>`;
+  document.getElementById('main').innerHTML=`<div class="view">${({today:viewToday,rota:viewRota,me:viewMe,team:viewTeam,admin:viewAdmin,resources:viewResources})[v]()}</div>`;
+  if(v==='resources')mountViewer();
   const sel=document.querySelector('.day[aria-pressed="true"]');if(sel)sel.scrollIntoView({inline:'center',block:'nearest'});
 }
 function scrollToDay(i){requestAnimationFrame(()=>{const el=document.getElementById('d'+i);if(el)el.scrollIntoView({block:'start'})})}
@@ -854,7 +1162,22 @@ document.addEventListener('click',e=>{
     try{navigator.clipboard.writeText(ta.value).then(done,fallback)}catch(err){fallback()}return}
   const ps=t.closest('[data-past]');if(ps){state.past=ps.dataset.past==='1';render();return}
   const tt=t.closest('[data-teamtab]');if(tt){state.teamTab=tt.dataset.teamtab;render();return}
-  const du=t.closest('[data-duty]');if(du){const [i,k]=du.dataset.duty.split('|');if(+i>=todayIdx)swapSheet(+i,k);return}
+  const du=t.closest('[data-duty]');if(du){const [i,k]=du.dataset.duty.split('|');dutySheet(+i,k);return}
+  const sf=t.closest('[data-swapfrom]');if(sf){const [i,k]=sf.dataset.swapfrom.split('|');swapSheet(+i,k);return}
+  const vw=t.closest('[data-view]');if(vw){state.grid=vw.dataset.view==='grid';render();if(!state.grid&&days[state.date].d.startsWith(state.month))scrollToDay(state.date);return}
+  const rt=t.closest('[data-restab]');if(rt){state.resTab=rt.dataset.restab;try{sessionStorage.setItem('orthoResTab',state.resTab)}catch(e){}render();window.scrollTo(0,0);return}
+  const ag=t.closest('[data-scope]');if(ag){state.scope=ag.dataset.scope;render();return}
+  const zm=t.closest('[data-zoom]');if(zm){viewer.zoom=Math.min(3,Math.max(0.5,viewer.zoom+0.25*+zm.dataset.zoom));const b=document.getElementById('pdfpages');if(b&&viewer.doc)drawPages(b);return}
+  const ht=t.closest('[data-hit]');if(ht){if(viewer.hits.length){viewer.hit=(viewer.hit+ +ht.dataset.hit+viewer.hits.length)%viewer.hits.length;paintHits();gotoHit()}return}
+  const dop=t.closest('[data-docopen]');if(dop){const a=document.createElement('a');a.href=docBlobUrl(dop.dataset.docopen);a.target='_blank';a.rel='noopener';document.body.appendChild(a);a.click();a.remove();return}
+  const ddl=t.closest('[data-docdl]');if(ddl){const id=ddl.dataset.docdl,a=document.createElement('a');a.href=docBlobUrl(id);a.download=(DEMO.docs[id].filename||id+'.pdf');document.body.appendChild(a);a.click();a.remove();return}
+  const drt=t.closest('[data-docretry]');if(drt){docErr[drt.dataset.docretry]=null;render();return}
+  const swg=t.closest('[data-swgrp]');if(swg){window._swap.grp=swg.dataset.swgrp;document.querySelectorAll('[data-swgrp]').forEach(b=>b.setAttribute('aria-pressed',b===swg));swapList();return}
+  const ed=t.closest('[data-edit]');if(ed){const [i,k,...r]=ed.dataset.edit.split('|');editSheet(+i,k,r.join('|'));return}
+  const et=t.closest('[data-edto]');if(et){window._edit.to=et.dataset.edto;document.querySelectorAll('[data-edto]').forEach(b=>b.setAttribute('aria-pressed',b===et));const b=document.getElementById('edgo');b.disabled=false;b.textContent=`Replace with ${et.dataset.edto}`;return}
+  if(t.closest('#edgo')){if(window._edit.to)doEdit(window._edit.to,t.closest('#edgo'));return}
+  if(t.closest('#edremove')){doEdit('',t.closest('#edremove'));return}
+  const upl=t.closest('[data-upload]');if(upl){uploadDoc(upl.dataset.upload,upl);return}
   const kd=t.closest('[data-kind]');if(kd){window._swap.kind=kd.dataset.kind;window._swap.back=null;document.querySelectorAll('#swapkind button').forEach(b=>b.setAttribute('aria-pressed',b===kd));swapUI();return}
   const bk=t.closest('[data-back]');if(bk){const [bi,bkk]=bk.dataset.back.split('|');window._swap.back={i:+bi,k:bkk};swapUI();return}
   const to=t.closest('[data-to]');if(to){window._swap.to=to.dataset.to;window._swap.back=null;document.querySelectorAll('[data-to]').forEach(b=>b.setAttribute('aria-pressed',b===to));swapUI();return}
@@ -862,9 +1185,10 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet()});
 document.addEventListener('change',e=>{if(['lfrom','lto'].includes(e.target.id))updateLeaveClash();if(e.target.id==='wsort'){state.wSort=e.target.value;render()}});
-document.addEventListener('input',e=>{if(e.target.id==='sq'){state.sq=e.target.value;const pos=e.target.selectionStart;render();const q=document.getElementById('sq');q.focus();q.setSelectionRange(pos,pos);return}if(e.target.id==='nameq'){document.getElementById('namelist').innerHTML=nameList(e.target.value);return}if(e.target.id==='q'){state.q=e.target.value;const pos=e.target.selectionStart;render();const q=document.getElementById('q');q.focus();q.setSelectionRange(pos,pos)}});
+document.addEventListener('input',e=>{if(e.target.id==='tq'){state.tq=e.target.value;const pos=e.target.selectionStart;render();const q=document.getElementById('tq');q.focus();q.setSelectionRange(pos,pos);return}if(e.target.id==='swq'){window._swap.q=e.target.value.trim().toUpperCase();swapList();return}if(e.target.id==='edq'){const q=e.target.value.trim().toUpperCase();document.querySelectorAll('[data-edto]').forEach(b=>{b.hidden=!!q&&!b.dataset.edto.includes(q)});return}if(e.target.id==='pq'){state.pq=e.target.value;clearTimeout(window._pqT);window._pqT=setTimeout(()=>pdfSearch(state.pq),250);return}if(e.target.id==='sq'){state.sq=e.target.value;const pos=e.target.selectionStart;render();const q=document.getElementById('sq');q.focus();q.setSelectionRange(pos,pos);return}if(e.target.id==='nameq'){document.getElementById('namelist').innerHTML=nameList(e.target.value);return}if(e.target.id==='q'){state.q=e.target.value;const pos=e.target.selectionStart;render();const q=document.getElementById('q');q.focus();q.setSelectionRange(pos,pos)}});
 window.addEventListener('hashchange',()=>{render();window.scrollTo(0,0);if(route()==='rota'&&!state.grid&&days[state.date].d.startsWith(state.month))scrollToDay(state.date)});
 localLists();
+setInterval(refreshActive,15000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshActive()});window.addEventListener('focus',refreshActive);
 if(BOOT&&BOOT.fromCache){const ago=Date.now()-Date.parse(DEMO.at||0);if(ago>36e5)META.label='SAVED COPY'}
 document.getElementById('railfoot').textContent=DEMO.at?'Rota from the Google Sheet · read '+new Date(DEMO.at).toLocaleString('en-GB',{timeZone:'Asia/Bahrain',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
 render();
@@ -874,6 +1198,143 @@ try{const m=sessionStorage.getItem('orthoToast');if(m){sessionStorage.removeItem
 if(state.admin)loadAdmin().then(()=>render()).catch(e=>{try{sessionStorage.removeItem('orthoPw')}catch(x){}state.admin=false;render();toast(esc(e.message),true)});
 else loadMine();
 }
+// ---------- Trauma case allocation (departmental guide) ----------
+// Copied item by item from "Trauma Cases Allocation – Voting Form" (Dr Ali Redha Karashi, 26/5/25),
+// voting result file dated 10-7-25. Text is as written in the document (typos kept).
+// to: 'general' = ticked General · 'sub' = ticked Subspecialty (the section's subspecialty) · 'peds' = marked "Pediatrics".
+// Typos corrected and "Pediatrics" added to unlabelled Pediatrics-section lines at Yusuf's request (31 Oct 2026);
+// TRAUMA_ORIGINAL keeps the document's own wording for checking against the PDF.
+// k: extra search words only (abbreviations / other names). They never change the rule.
+// If the uploaded guide PDF is a different file from this one, the app warns that these rules may be out of date.
+const TRAUMA_SOURCE={title:'Trauma Cases Allocation – Voting Form',date:'26/5/25',result:'10-7-25',sha256:'436065af9fe64f8d407b8b04ad108fe46108463e44e318383bc3cc1f51009d5c'};
+const TRAUMA_SECTIONS={
+  gen:{n:1,label:'General Orthopedics',page:1},
+  foot:{n:2,label:'Foot and Ankle',page:2},
+  upper:{n:3,label:'Upper Limb',page:3},
+  spine:{n:4,label:'Spine',page:4},
+  peds:{n:5,label:'Pediatrics',page:5},
+  pelvis:{n:6,label:'Pelvis',page:6},
+  hipknee:{n:7,label:'Hip and Knee',page:6}};
+const TRAUMA_RULES=[
+  ['gen','Any case with more than one system involved (e.g. distal radius + tibial plateau)','general','polytrauma multiple injuries fractures two systems multi trauma'],
+  ['gen','Tibia shaft fractures','general','tibial shaft tib fib leg'],
+  ['gen','Femur shaft fractures','general','femoral shaft thigh'],
+  ['gen','Radius and/or ulna shaft fractures','general','forearm both bone radial shaft ulnar monteggia galeazzi nightstick'],
+  ['gen','Humerus shaft fracture','general','humeral shaft arm'],
+  ['gen','Extracapsular hip fractures (Intertrochanteric)','general','hip fracture IT intertroch NOF neck of femur proximal intertrochanteric #NOF'],
+  ['gen','Subtrochanteric femur fracture','general','subtroch hip fracture proximal femur'],
+  ['gen','Patella fracture','general','patellar kneecap knee'],
+  ['gen','Olecranon fractures','general','elbow'],
+  ['gen','Patellar tendon rupture','general','knee extensor tendon'],
+  ['gen','Quadriceps tendon rupture','general','quads knee extensor tendon'],
+  ['gen','Hip pain to investigate possible occult fractures','general','occult hip fracture'],
+  ['gen','Any injuries not specified under the subspecialties below','general',''],
+  ['foot','Isolated medial or lateral malleolus fracture.','sub','ankle fracture weber unimalleolar MM LM medial malleolar lateral pott'],
+  ['foot','Bimalleolar ankle fracture','sub','ankle fracture weber bimal pott'],
+  ['foot','Trimalleolar ankle fracture','sub','ankle fracture weber trimal pott'],
+  ['foot','Tibiotalar ankle dislocation','sub','ankle dislocation fracture'],
+  ['foot','Subtalar dislocation','sub','hindfoot foot'],
+  ['foot','Pilon fractures','sub','plafond distal tibia ankle'],
+  ['foot','Calcaneus fracture','sub','calcaneal heel os calcis hindfoot foot'],
+  ['foot','Talus fracture','sub','talar hawkins hindfoot foot ankle'],
+  ['foot','Other tarsal bones fractures','sub','navicular cuboid cuneiform midfoot chopart foot'],
+  ['foot','Metatarsal fractures','sub','MT jones forefoot foot'],
+  ['foot','Toes phalangeal fracture','sub','toe forefoot foot'],
+  ['foot','Cut wounds from ankle to toes (peroneal, Achilles, tibialis anterior tendons)','sub','laceration tendon injury foot wound ankle'],
+  ['foot','Lisfranc injury','sub','tarsometatarsal TMT midfoot foot'],
+  ['foot','Syndesmotic injury','sub','syndesmosis ankle maisonneuve high sprain'],
+  ['foot','Closed Achilles tendon rupture','sub','TA rupture tendo achilles ATR ankle heel tendon'],
+  ['foot','Septic ankle','sub','septic arthritis ankle infection joint'],
+  ['upper','Intra-articular distal radius fracture','sub','DRF wrist fracture colles smith barton'],
+  ['upper','Extra-articular distal radius fracture','general','DRF wrist fracture colles smith barton'],
+  ['upper','Proximal humerus fracture','sub','shoulder fracture PHF'],
+  ['upper','Intra-articular distal humerus fracture','sub','elbow'],
+  ['upper','Elbow terrible triad','sub','elbow fracture dislocation'],
+  ['upper','Simple elbow dislocation','general','elbow'],
+  ['upper','Simple shoulder dislocation','general','glenohumeral shoulder bankart hill sachs'],
+  ['upper','Clavicle shaft fractures','sub','collarbone shoulder'],
+  ['upper','Distal clavicle fractures','sub','lateral clavicle collarbone shoulder'],
+  ['upper','Scapula fractures','sub','scapular glenoid shoulder'],
+  ['upper','Coronoid fracture','sub','elbow'],
+  ['upper','Radial head fractures','sub','elbow radial neck'],
+  ['upper','Capitellum fractures','sub','elbow'],
+  ['upper','AC joint dissociation','sub','ACJ acromioclavicular shoulder'],
+  ['upper','Carpal bone fractures (e.g., scaphoid)','sub','wrist scaphoid hand'],
+  ['upper','Metacarpal and phalangeal fractures','sub','hand finger boxer MC bennett rolando'],
+  ['upper','Cut wounds/tendon injuries from wrist to fingers','sub','laceration hand tendon flexor extensor wrist finger'],
+  ['upper','Septic shoulder, elbow, wrist','sub','septic arthritis infection'],
+  ['upper','Abscess and cellulitis (upper limb)','sub','hand infection arm'],
+  ['spine','Vertebral fractures (cervical, thoracic, lumbar)','sub','spine fracture c-spine neck back jefferson hangman chance burst'],
+  ['spine','Sacral fractures','sub','sacrum pelvis back'],
+  ['spine','Coccygeal fractures','sub','coccyx tailbone back'],
+  ['spine','Incomplete spinal cord injuries (e.g. central cord syndrome).','sub','SCI spine neck'],
+  ['spine','Osteoporotic vertebral compression fractures.','sub','spine fracture wedge VCF back'],
+  ['spine','Back pain admissions for analgesia','sub','low back pain LBP spine'],
+  ['spine','Cauda equina syndrome','sub','CES spine back'],
+  ['spine','Spinal cord injuries','sub','SCI spine'],
+  ['spine','Spine bony lesions for investigation/ tumors','sub','tumour metastasis metastases back'],
+  ['spine','Vertebral osteomyelitis and discitis','sub','spine infection discitis back OM'],
+  ['spine','Pediatric atlantoaxial rotatory instability','peds','child paediatric neck spine'],
+  ['spine','Pediatric vertebral fractures.','peds','child paediatric vertebral spine fracture back'],
+  ['spine','Pediatrics traumatic spondylolisthesis','peds','child paediatric spine back'],
+  ['spine','Pediatric spondylodiscitis.','peds','child paediatric discitis spine infection back'],
+  ['peds','Pediatrics medial clavicle physeal fracture','sub','child paediatric physeal shoulder salter harris'],
+  ['peds','Pediatrics clavicle shaft fracture','sub','child paediatric collarbone shoulder'],
+  ['peds','Pediatrics distal clavicle physeal fractures.','sub','child paediatric distal clavicle physeal shoulder'],
+  ['peds','Pediatrics proximal humerus fractures.','sub','child paediatric shoulder PHF'],
+  ['peds','Pediatrics humeral shaft fractures.','sub','child paediatric humerus arm'],
+  ['peds','Pediatrics distal humerus physeal separation.','sub','child paediatric physeal elbow'],
+  ['peds','Pediatrics supracondylar fracture','sub','child paediatric SCH elbow humerus SC'],
+  ['peds','Pediatrics medial epicondyle fractures','sub','child paediatric elbow'],
+  ['peds','Pediatrics lateral condyle fracture','sub','child paediatric elbow'],
+  ['peds','Pediatrics olecranon fractures.','sub','child paediatric elbow'],
+  ['peds','Pediatrics elbow dislocation','sub','child paediatric elbow'],
+  ['peds','Pediatrics radial head and neck fractures.','sub','child paediatric elbow'],
+  ['peds','Pediatrics both bone forearm fractures.','sub','child paediatric radius ulna monteggia galeazzi'],
+  ['peds','Pediatrics distal radius fractures.','sub','child paediatric wrist DRF'],
+  ['peds','Pediatrics hip dislocation','sub','child paediatric hip'],
+  ['peds','Pediatrics femur shaft fractures','sub','child paediatric femoral thigh'],
+  ['peds','Pediatrics proximal femur fractures','sub','child paediatric hip'],
+  ['peds','Pediatrics distal femur physeal fractures','sub','child paediatric physeal knee'],
+  ['peds','Pediatrics tibial eminence fractures','sub','child paediatric tibial spine knee'],
+  ['peds','Pediatrics tibial tubercle fractures','sub','child paediatric tuberosity knee'],
+  ['peds','Pediatrics patella sleeve fractures','sub','child paediatric knee'],
+  ['peds','Pediatrics proximal tibia shaft fractures','sub','child paediatric tibia leg'],
+  ['peds','Pediatrics proximal tibia fractures','sub','child paediatric knee'],
+  ['peds','Pediatrics Tillaux fracture','sub','child paediatric ankle salter harris'],
+  ['peds','Pediatrics triplane fracture','sub','child paediatric ankle salter harris'],
+  ['peds','Pediatrics septic arthritis (hip, knee, shoulder..)','sub','child paediatric infection hip knee shoulder'],
+  ['peds','Pediatrics osteomyelitis','sub','child paediatric infection OM'],
+  ['peds','Pediatrics slipped capital femoral epiphysis','sub','SCFE child paediatric hip SUFE'],
+  ['peds','Other trauma not specified in patients below 14 years old','sub','child paediatric'],
+  ['pelvis','Acetabular fractures','sub','acetabulum hip pelvis'],
+  ['pelvis','Pelvic ring fractures','sub','pelvis'],
+  ['pelvis','Isolated superior/inferior pubic rami fractures','sub','pubic ramus pelvis'],
+  ['hipknee','Tibial plateau fracture (types 1 and 4 = no intra-articular depression)','sub','schatzker knee'],
+  ['hipknee','Other types of tibial plateau (joint depression/ bicondylar or Metaphyseal-diaphyseal disassociation)','sub','schatzker knee'],
+  ['hipknee','Knee dislocation','general','knee'],
+  ['hipknee','Hip dislocation','sub','hip'],
+  ['hipknee','Hoffa fracture (simple intra-articular)','sub','distal femur knee'],
+  ['hipknee','Comminuted distal femur fracture','sub','knee supracondylar femur'],
+  ['hipknee','Septic hip','sub','septic arthritis infection hip'],
+  ['hipknee','Septic knee','sub','septic arthritis infection knee'],
+  ['hipknee','Periprosthetic fractures with no extension to the implant','sub','arthroplasty THR TKR hemiarthroplasty PPF hip knee'],
+  ['hipknee','Periprosthetic fractures with extension to the implant','sub','arthroplasty THR TKR hemiarthroplasty PPF hip knee'],
+  ['hipknee','Intracapsular proximal femur fracture (femoral neck)','sub','NOF neck of femur hip fracture #NOF garden'],
+].map(([s,t,to,k],id)=>({id,s,t,to,k}));
+// Rota column for each subspecialty (on-call tab, consultants block).
+const TRAUMA_ORIGINAL={"Pediatric vertebral fractures.": "Pediatric veretebral fractures.", "Pediatrics medial clavicle physeal fracture": "Pediatrics medial clavicle physical fracture", "Pediatrics distal clavicle physeal fractures.": "Pediatrics istal clavicle physical fractures.", "Pediatrics distal humerus physeal separation.": "Pediatrics distal humerus physical separation.", "Pediatrics femur shaft fractures": "Pediatrics femur shaft  fractures", "Pediatrics distal femur physeal fractures": "Pediatrics distal femur physical fractures", "Pediatrics supracondylar fracture": "Supracondylar fracture", "Pediatrics tibial eminence fractures": "Tibial eminence fractures", "Pediatrics proximal tibia shaft fractures": "Proximal tibia shaft fractures", "Pediatrics Tillaux fracture": "Tillaux fracture", "Pediatrics triplane fracture": "Triplane fracture", "Pediatrics slipped capital femoral epiphysis": "Slipped capital femoral epiphysis"};
+const SUB_COL={spine:1,pelvis:2,peds:3,hipknee:4,upper:5,foot:6};
+
+// Active on-call date: the on-call day runs 07:00 → 07:00 next day, Bahrain time.
+function bahrainNow(d){
+  try{const p=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Bahrain',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(d).map(x=>[x.type,x.value]));
+    return {date:`${p.year}-${p.month}-${p.day}`,hour:+p.hour%24,minute:+p.minute}}
+  catch(e){const b=new Date(d.getTime()+3*36e5);return {date:b.toISOString().slice(0,10),hour:b.getUTCHours(),minute:b.getUTCMinutes()}}
+}
+const addDays=(iso,n)=>{const t=new Date(iso+'T00:00:00Z');t.setUTCDate(t.getUTCDate()+n);return t.toISOString().slice(0,10)};
+function onCallDateAt(d){const b=bahrainNow(d);return b.hour>=7?b.date:addDays(b.date,-1)}
+
 // ===== Connection =====
 const API='https://script.google.com/macros/s/AKfycbyC3gLz_OJpbDLlb0x-J22wjawc-IlWjQ7TH6NQUZF-NX93mPIVX1xJsr4S6NbSC4M45w/exec';                       // the Google Apps Script web-app link (ends in /exec)
 const COORDINATORS=['AYMAN','YOUSIF.ALI'];  // shown as "Rota coordinator" on their Me screen
@@ -968,6 +1429,8 @@ function parseRange(s,ym){
 // ---------- Sheet tabs → the app's data ----------
 const SLOT_K={cons_general:'cons',cons_spine:'cons',cons_pelvis:'cons',cons_paeds:'cons',cons_hipknee:'cons',cons_upperlimb:'cons',cons_foot:'cons',team_leader:'tl',ot:'ot',wards:'wards',ae:'ae',interns:'interns',mc_junior:'mcj',mc_senior:'mcs',trauma_ot:'tr',standby:'sb'};
 const SLOT_IDX={cons_general:0,cons_spine:1,cons_pelvis:2,cons_paeds:3,cons_hipknee:4,cons_upperlimb:5,cons_foot:6,team_leader:7,wards:10,interns:15};
+// Neurosurgery covering a column may be written NEURO or NS.
+const NEURO_WORDS=['NS','NEURO','NEUROSURGERY','NEURO SURGERY'];
 const SUB_KEYS=['gen','spine','pelvis','peds','hipknee','upper','foot'];
 function buildData(p){
   const warnings=[];
@@ -1004,7 +1467,7 @@ function buildData(p){
     if(!M.oc.assignments.length){warnings.push({tab:M.ocTab,issue:'empty_month',detail:`${key} has no names yet, so it is not shown`});return}
     const [y,m]=key.split('-').map(Number),n=new Date(Date.UTC(y,m,0)).getUTCDate(),byDate={};
     for(let d=1;d<=n;d++){const iso=isoDate(y,m,d);byDate[iso]={d:iso,dow:dowOf(iso),oc:Array(16).fill(''),mo:['','',[],['','','']],cells:[]};days.push(byDate[iso])}
-    const add=(a,tab,isOC)=>{const x=byDate[a.date];if(!x)return;const k=SLOT_K[a.slot];
+    const add=(a,tab,isOC)=>{const x=byDate[a.date];if(!x)return;const k=SLOT_K[a.slot];if(NEURO_WORDS.includes(a.raw))a.raw='NEURO';
       x.cells.push({k,n:a.raw,cell:`'${tab}'!${a.cell}`});
       if(a.raw!=='NEURO'&&a.raw!=='ROTATOR'&&!names.has(canon(a.raw)))(unknown[a.raw]=unknown[a.raw]||[]).push(`${tab}!${a.cell}`);
       if(isOC){let i=SLOT_IDX[a.slot];if(a.slot==='ot')i=a.position<=2?7+a.position:-1;if(a.slot==='ae')i=a.position<=4?10+a.position:-1;
@@ -1018,7 +1481,7 @@ function buildData(p){
   Object.entries(unknown).forEach(([n,cells])=>{people.push({n,g:'unconfirmed',status:'unknown'});warnings.push({issue:'unknown_name',detail:n,cells})});
   people.forEach(s=>{const c=consCols[s.n];if(s.g==='consultant'&&c){const best=Object.entries(c).sort((a,b)=>b[1]-a[1])[0];s.sub=SUB_KEYS[+best[0]]}});
   const firms=[...new Set([...firmLead,...Object.values(firmOf)])].filter(l=>names.has(l)).map(lead=>({lead,term:'',members:people.filter(s=>firmOf[s.n]===lead&&s.status!=='inactive').map(s=>s.n)}));
-  return {meta:{label:'',note:'',drafts:[]},staff:people,aliases:Object.entries(aliasMap),firms,days,leave,coordinators:COORDINATORS,warnings,at:p.at};
+  return {docs:p.docs||{},meta:{label:'',note:'',drafts:[]},staff:people,aliases:Object.entries(aliasMap),firms,days,leave,coordinators:COORDINATORS,warnings,at:p.at};
 }
 
 // ---------- talking to the Google Sheet ----------
