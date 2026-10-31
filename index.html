@@ -288,6 +288,7 @@ button.stat[aria-pressed="true"]{border-color:var(--accent);background:var(--acc
 .toast.bad{background:var(--alert);color:#fff}
 @media (min-width:900px){.toast{bottom:24px}}
 [hidden]{display:none!important}
+.lvt{width:100%}.lvt td.d{min-width:110px}.lvt td{white-space:normal}
 .opt[disabled]{opacity:.5;cursor:not-allowed}
 .cellbtn{all:unset;cursor:pointer;border-bottom:1px dashed var(--accent);font:inherit;color:inherit}.cellbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .tlabel{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);font-weight:700}
@@ -354,7 +355,7 @@ const GRADE={unconfirmed:'?',consultant:'C',senior:'S',transitional:'R4',junior:
 const GRADE_NAME={unconfirmed:'Grade not set',consultant:'Consultant',senior:'Senior',transitional:'Junior/Senior (R4)',junior:'Junior',rotator:'Rotator (outside rotation)',intern:'Intern',inactive:'Removed'};
 const DUTY={
   cons:{label:'Consultant on call',tag:'CON',c:'cons'},tl:{label:'Team Leader',tag:'TL',c:'tl'},ot:{label:'Operation Theatre',tag:'OT',c:'ot'},
-  wards:{label:'Wards',tag:'WD',c:'wd'},ae:{label:'A&E',tag:'A&E',c:'ae'},interns:{label:'Interns',tag:'INT',c:'in'},
+  wards:{label:'Wards',tag:'WD',c:'wd'},ae:{label:'A&E',tag:'A&E',c:'ae'},interns:{label:'Interns / Rotators',tag:'I/R',c:'in'},
   mcj:{label:'Morning call · junior',tag:'MC·J',c:'mc'},mcs:{label:'Morning call · senior',tag:'MC·S',c:'mc'},
   tr:{label:'Trauma O.T.',tag:'TR',c:'tr'},sb:{label:'Standby & Help',tag:'SB',c:'sb'}};
 const cv=k=>`--c:var(--d-${k});--c-s:var(--d-${k}-s)`;
@@ -427,7 +428,9 @@ const upcoming=a=>a.filter(x=>x.i>=todayIdx);
 let alertCount=upcoming(CHK.gap).length+upcoming(CHK.leave).length+upcoming(CHK.unres).length+upcoming(CHK.grade).length;
 
 // ---------- requests (stored in the "Requests" tab of the Sheet) ----------
-const K_OF_LABEL=Object.fromEntries(Object.entries(DUTY).map(([k,v])=>[v.label,k]));
+const K_OF_LABEL=Object.fromEntries(Object.entries(DUTY).map(([k,v])=>[v.label,k]));K_OF_LABEL['Interns']='interns';
+// The Sheet column may say INTERNS or INTERNS / ROTATOR: name each person's duty from their grade on the Staff tab.
+const ownLabel=(k,n)=>{if(k!=='interns')return DUTY[k].label;const g=STAFF[canon(n)]?.g;return g==='rotator'?'Rotator on call':g==='intern'?'Intern on call':'Interns / Rotators'};
 const isoOf=v=>{v=String(v||'').trim();if(/^\d{4}-\d{2}-\d{2}/.test(v))return v.slice(0,10);const m=v.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);if(m)return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;return v};
 const fmtD=iso=>{const i=idxOf[iso];if(i!==undefined)return fmt(i);const d=new Date(iso+'T00:00:00Z');return isNaN(d)?esc(iso):`${DOW[d.getUTCDay()]} ${d.getUTCDate()} ${MON[d.getUTCMonth()]}`};
 const LEAVE_KIND=l=>(LEAVE_TYPES.find(t=>t[1]===l)||[''])[0];
@@ -487,7 +490,7 @@ function viewToday(){
   let hero;
   if(!state.me)hero=`<button class="hero empty" data-pickme><span class="eyebrow">Your next duty</span><span class="what">Find your name</span><span class="note">No sign-in. Your duties show first every time you open the app on this phone.</span></button>`;
   else{const nx=myDuties(state.me).find(d=>d.i>=todayIdx);
-    hero=nx?`<button class="hero" data-goto="${nx.i}"><span class="eyebrow">Your next duty · ${esc(state.me)}</span><span class="what">${tag(nx.k)}${DUTY[nx.k].label}</span><span class="when">${nx.i===todayIdx?'Today':fmt(nx.i)}${nx.detail?' · '+esc(nx.detail):''}</span></button>`:`<div class="hero"><span class="eyebrow">Your next duty · ${esc(state.me)}</span><span class="what">Nothing more scheduled</span></div>`;}
+    hero=nx?`<button class="hero" data-goto="${nx.i}"><span class="eyebrow">Your next duty · ${esc(state.me)}</span><span class="what">${tag(nx.k)}${ownLabel(nx.k,state.me)}</span><span class="when">${nx.i===todayIdx?'Today':fmt(nx.i)}${nx.detail?' · '+esc(nx.detail):''}</span></button>`:`<div class="hero"><span class="eyebrow">Your next duty · ${esc(state.me)}</span><span class="what">Nothing more scheduled</span></div>`;}
   const dayAlerts=[...CHK.gap.filter(g=>g.i===i).map(g=>`<div class="alert ${g.bad?'bad':''}"><span class="dot"></span><div><b>${esc(g.what)}</b> not covered</div></div>`),
     ...CHK.leave.filter(g=>g.i===i).map(g=>`<div class="alert"><span class="dot"></span><div><b>${esc(g.n)}</b> is on ${DUTY[g.k].label} during leave (${g.l.s.slice(8)}/${g.l.s.slice(5,7)}–${g.l.e.slice(8)}/${g.l.e.slice(5,7)})</div></div>`)].join('');
   const tiles=SUBS.map(([k,lab],c)=>{const n=oc[c];const cls=c===0?(n?'general':'general missing'):(n?'':'off');
@@ -495,7 +498,7 @@ function viewToday(){
     return `<button class="tile ${cls}" ${n&&isPerson(n)?`data-person="${esc(canon(n))}"`:'disabled'}><span class="ic">${SUBICON[k]}</span><span class="tx"><small>${lab}${c===0?' · on call':''}</small><b>${esc(name)}</b></span></button>`}).join('');
   const row=(k,label,list,empty='—')=>{const l=list.filter(Boolean);return `<div class="duty" style="${cv(DUTY[k].c)}">${tag(k)}<div><div class="lbl">${label}</div><div class="people">${l.length?l.map(n=>chip(n,iso,{showGrade:k==='ae'})).join(''):`<span class="none">${empty}</span>`}</div></div></div>`};
   const ae=oc.slice(11,15).filter(Boolean),aeS=ae.filter(n=>STAFF[canon(n)]?.g==='senior').length;
-  const oncall=`<div class="card">${row('tl','Team Leader',[oc[7]])}${row('ot','Operation Theatre',[oc[8],oc[9]])}${row('wards','Wards',[oc[10]])}${row('ae',`A&E · ${ae.length} doctors, ${aeS} senior`,ae)}${oc[15]?row('interns','Interns',[oc[15]]):''}</div>`;
+  const oncall=`<div class="card">${row('tl','Team Leader',[oc[7]])}${row('ot','Operation Theatre',[oc[8],oc[9]])}${row('wards','Wards',[oc[10]])}${row('ae',`A&E · ${ae.length} doctors, ${aeS} senior`,ae)}${oc[15]?row('interns','Interns / Rotators',[oc[15]]):''}</div>`;
   const morning=x.dow>4?`<div class="card"><span class="none">No morning duties on Fridays and Saturdays.</span></div>`:
    `<div class="card">${row('mcj','Junior morning call',[j])}${row('mcs','Senior morning call',[s])}${(x.dow===0||x.dow===3)?`<div class="duty" style="${cv('tr')}">${tag('tr')}<div><div class="lbl">Trauma O.T.</div><div class="pair">${t.map(n=>chip(n,iso)).join('<span>/</span>')}</div></div></div>`:''}${row('sb','Standby & Help',sb)}</div>`;
   return `${topbar(i===todayIdx&&inRange?'Active on-call':'Orthopaedics on call',fmtLong(i),strip())}
@@ -514,12 +517,13 @@ function viewToday(){
 function monthTabs(){const ms=[...new Set(days.map(d=>d.d.slice(0,7)))];return `<div class="seg" role="group" aria-label="Month">${ms.map(m=>`<button aria-pressed="${m===state.month}" data-month="${m}">${MON[+m.slice(5)-1]}${META.drafts.includes(m)?' · draft':''}</button>`).join('')}</div>`}
 function viewRota(){
   const ms=days.filter(d=>d.d.startsWith(state.month));
-  const ctrl=`<div class="seg" role="group" aria-label="Rota"><button aria-pressed="${state.rota==='oncall'}" data-rota="oncall">On-call</button><button aria-pressed="${state.rota==='morning'}" data-rota="morning">Morning</button></div>${monthTabs()}`;
+  const ctrl=`<div class="seg" role="group" aria-label="Rota"><button aria-pressed="${state.rota==='oncall'}" data-rota="oncall">On-call</button><button aria-pressed="${state.rota==='morning'}" data-rota="morning">Morning</button><button aria-pressed="${state.rota==='leaves'}" data-rota="leaves">Leaves</button></div>${monthTabs()}`;
   let body;
-  if(state.grid)body=state.rota==='oncall'?gridOnCall(ms):gridMorning(ms);
+  if(state.rota==='leaves')body=leavesHtml(state.month);
+  else if(state.grid)body=state.rota==='oncall'?gridOnCall(ms):gridMorning(ms);
   else body=`<div class="daylist wide">${ms.filter(x=>state.rota==='oncall'||!x.we).map(x=>state.rota==='oncall'?cardOnCall(x):cardMorning(x)).join('')}</div>`;
-  return `${topbar(META.drafts.includes(state.month)?'Draft · not yet published':'Published',`${state.rota==='oncall'?'On-call':'Morning'} · ${MONL[+state.month.slice(5)-1]}`,ctrl,`<div class="seg viewtog" role="group" aria-label="View"><button aria-pressed="${state.grid}" data-view="grid">Spreadsheet</button><button aria-pressed="${!state.grid}" data-view="cards">Day cards</button></div>`)}
-  ${state.admin&&state.adminLoaded?`<p class="note" style="margin:8px 2px">${state.grid?'Coordinator: tap a name to replace it or remove it from that duty.':'Coordinator: switch to Spreadsheet to change or remove a name.'}</p>`:'<div style="height:8px"></div>'}${body}`;
+  return `${topbar(META.drafts.includes(state.month)?'Draft · not yet published':'Published',`${state.rota==='oncall'?'On-call':state.rota==='leaves'?'Leaves':'Morning'} · ${MONL[+state.month.slice(5)-1]}`,ctrl,state.rota==='leaves'?'':`<div class="seg viewtog" role="group" aria-label="View"><button aria-pressed="${state.grid}" data-view="grid">Spreadsheet</button><button aria-pressed="${!state.grid}" data-view="cards">Day cards</button></div>`)}
+  ${state.admin&&state.adminLoaded&&state.rota!=='leaves'?`<p class="note" style="margin:8px 2px">${state.grid?'Coordinator: tap a name to replace it or remove it from that duty.':'Coordinator: switch to Spreadsheet to change or remove a name.'}</p>`:'<div style="height:8px"></div>'}${body}`;
 }
 function cardOnCall(x){
   const oc=x.oc,iso=x.d;
@@ -535,7 +539,7 @@ function cardMorning(x){
 function gridOnCall(ms){
   const sub=['General','Spine','Pelvis','Paeds','Hip & Knee','Upper limb','Foot','','OT','OT','Wards','','','','',''];
   const gs=new Set([0,7,8,11,15]);
-  const head=`<thead><tr><th class="d" rowspan="2">Date</th><th class="grp gs" colspan="7" style="${cv('cons')}">Consultants</th><th class="grp gs" style="${cv('tl')}">Team leader</th><th class="grp gs" colspan="3" style="${cv('ot')}">Operation theatre</th><th class="grp gs" colspan="4" style="${cv('ae')}">Accident &amp; Emergency</th><th class="grp gs" style="${cv('in')}">Interns</th></tr><tr>${sub.map((h,c)=>`<th class="${gs.has(c)?'gs':''}">${h}</th>`).join('')}</tr></thead>`;
+  const head=`<thead><tr><th class="d" rowspan="2">Date</th><th class="grp gs" colspan="7" style="${cv('cons')}">Consultants</th><th class="grp gs" style="${cv('tl')}">Team leader</th><th class="grp gs" colspan="3" style="${cv('ot')}">Operation theatre</th><th class="grp gs" colspan="4" style="${cv('ae')}">Accident &amp; Emergency</th><th class="grp gs" style="${cv('in')}">Interns / Rotators</th></tr><tr>${sub.map((h,c)=>`<th class="${gs.has(c)?'gs':''}">${h}</th>`).join('')}</tr></thead>`;
   return `<div class="tablewrap"><table class="rota">${head}<tbody>${ms.map(x=>`<tr class="${x.we?'we':''}${x.i===todayIdx&&inRange?' today':''}"><td class="d">${String(x.dd).padStart(2,'0')} ${DOW[x.dow]}</td>${x.oc.map((n,c)=>{const g=gs.has(c)?'gs ':'';if(!n)return c===0?`<td class="${g}gap">MISSING</td>`:`<td class="${g}"></td>`;return `<td class="${g}n${isPerson(n)&&leaveOf(n,x.d).length?' lv':''}">${editable(x.i,K_OF_COL(c),n,esc(n==='NEURO'?'NEURO':canon(n)))}</td>`}).join('')}</tr>`).join('')}</tbody></table></div>`;
 }
 function gridMorning(ms){
@@ -556,7 +560,7 @@ function viewMe(){
   const lv=DEMO.leave.filter(l=>l.n===state.me);
   const reqs=state.requests.filter(r=>r.from===state.me);
   const myLeave=state.leaveReqs.filter(r=>r.n===state.me);
-  const item=d=>{const l=leaveOf(state.me,days[d.i].d).length;return `<button class="item${!state.mf&&d.i<todayIdx?' past':''}${!state.mf&&list.indexOf(d)===nextI?' next':''}" style="${cv(DUTY[d.k].c)}" data-duty="${d.i}|${d.k}"><span class="when"><b>${days[d.i].dd}</b>${DOW[days[d.i].dow]}</span><span class="what"><b>${DUTY[d.k].label}</b><small>${d.rota==='oc'?'On-call':'Morning'}${d.detail?' · '+esc(d.detail):''}${l?' · <span style="color:var(--warn);font-weight:700">on leave</span>':''}</small></span>${tag(d.k)}</button>`};
+  const item=d=>{const l=leaveOf(state.me,days[d.i].d).length;return `<button class="item${!state.mf&&d.i<todayIdx?' past':''}${!state.mf&&list.indexOf(d)===nextI?' next':''}" style="${cv(DUTY[d.k].c)}" data-duty="${d.i}|${d.k}"><span class="when"><b>${days[d.i].dd}</b>${DOW[days[d.i].dow]}</span><span class="what"><b>${ownLabel(d.k,state.me)}</b><small>${d.rota==='oc'?'On-call':'Morning'}${d.detail?' · '+esc(d.detail):''}${l?' · <span style="color:var(--warn);font-weight:700">on leave</span>':''}</small></span>${tag(d.k)}</button>`};
   let listHtml;
   if(state.mf){
     const sel=inM.filter(F[state.mf].f);
@@ -793,7 +797,7 @@ function personSheet(n){
   const st=STAFF[n],list=myDuties(n),firm=FIRM_OF[n],next=list.filter(d=>d.i>=todayIdx).slice(0,6);
   const firmTxt=st.g==='consultant'?(firm?`Leads a firm of ${firm.members.length}`:''):(firm?`Firm: ${esc(firm.lead)}`:'No firm');
   openSheet(`<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><div><h3>${esc(n)}</h3><div class="sub">${st.full?esc(st.full)+' · ':''}${GRADE_NAME[st.g]}${st.sub?' · '+SUBS.find(x=>x[0]===st.sub)[1]:''} · ${firmTxt}</div></div><button class="iconbtn" data-close aria-label="Close">${NAV.close}</button></div>
-  <div class="section" style="margin-top:16px"><h2>Next duties</h2><div class="list">${next.map(d=>`<button class="item" style="${cv(DUTY[d.k].c)}" data-goto="${d.i}"><span class="when"><b>${days[d.i].dd}</b>${DOW[days[d.i].dow]}</span><span class="what"><b>${DUTY[d.k].label}</b><small>${MON[days[d.i].m-1]}${d.detail?' · '+esc(d.detail):''}</small></span>${tag(d.k)}</button>`).join('')||'<p class="none">None scheduled.</p>'}</div></div>
+  <div class="section" style="margin-top:16px"><h2>Next duties</h2><div class="list">${next.map(d=>`<button class="item" style="${cv(DUTY[d.k].c)}" data-goto="${d.i}"><span class="when"><b>${days[d.i].dd}</b>${DOW[days[d.i].dow]}</span><span class="what"><b>${ownLabel(d.k,n)}</b><small>${MON[days[d.i].m-1]}${d.detail?' · '+esc(d.detail):''}</small></span>${tag(d.k)}</button>`).join('')||'<p class="none">None scheduled.</p>'}</div></div>
   <p class="note">Contact details are private and appear only when the person chooses to share them.</p>`);
 }
 // Swap: 1) pick the colleague (All / Consultants / Seniors / Juniors + search), 2) pick exactly which of their duties you take.
@@ -866,7 +870,7 @@ function teamRows(i,rota){
     const cons=SUBS.map(([k,lab],c)=>oc[c]?row('cons',c===0?'General · on call':lab,[oc[c]]):'').join('');
     const none=SUBS.filter((x,c)=>c>0&&!oc[c]).map(x=>x[1]);
     return `${cons}${!oc[0]?'<div class="alert bad"><span class="dot"></span><div><b>No General consultant</b> on the rota</div></div>':''}${none.length?`<p class="note" style="margin:2px 0 6px">Not covered: ${none.join(', ')}</p>`:''}
-      ${row('tl','Team Leader',[oc[7]])}${row('ot','Operation Theatre',[oc[8],oc[9]])}${row('wards','Wards',[oc[10]])}${row('ae','A&E',oc.slice(11,15))}${row('interns','Interns',[oc[15]])}`;
+      ${row('tl','Team Leader',[oc[7]])}${row('ot','Operation Theatre',[oc[8],oc[9]])}${row('wards','Wards',[oc[10]])}${row('ae','A&E',oc.slice(11,15))}${row('interns','Interns / Rotators',[oc[15]])}`;
   }
   if(x.dow>4)return '<p class="none">No morning duties on Fridays and Saturdays.</p>';
   return `${row('mcj','Junior morning call',[j])}${row('mcs','Senior morning call',[s])}${t.length?row('tr','Trauma O.T.',t):''}${row('sb','Standby & Help',sb)}`;
@@ -1101,6 +1105,29 @@ async function doEdit(to,btn){
   catch(err){toast(esc(err.message),true);btn.disabled=false;btn.textContent=old}
 }
 
+// ---------- Rota → Leaves: who is on leave (from the leave lines under each on-call table) ----------
+function leavesHtml(month){
+  const first=`${month}-01`,last=`${month}-${String(new Date(Date.UTC(+month.slice(0,4),+month.slice(5),0)).getUTCDate()).padStart(2,'0')}`;
+  const inMonth=DEMO.leave.filter(l=>l.s<=last&&l.e>=first);
+  const ms=days.filter(d=>d.d.startsWith(month));
+  if(!state.lvDate||!state.lvDate.startsWith(month))state.lvDate=(TODAY.startsWith(month)?TODAY:ms[0]?.d)||first;
+  const dd=x=>`${+x.slice(8)} ${MON[+x.slice(5,7)-1]}`;
+  const onDay=inMonth.filter(l=>l.s<=state.lvDate&&state.lvDate<=l.e);
+  const people={};inMonth.forEach(l=>{(people[l.n]=people[l.n]||[]).push(l)});
+  const dayCount=n=>ms.filter(x=>people[n].some(l=>l.s<=x.d&&x.d<=l.e)).length;
+  const grp=n=>{const g=STAFF[n]?.g;return g==='consultant'?'Consultants':g?'Residents and others':'Not on the Staff tab'};
+  const groups=['Consultants','Residents and others','Not on the Staff tab'].map(g=>[g,Object.keys(people).filter(n=>grp(n)===g).sort((a,b)=>Math.min(...people[a].map(l=>+(l.s<first?first:l.s).slice(8)))-Math.min(...people[b].map(l=>+(l.s<first?first:l.s).slice(8)))||a.localeCompare(b))]).filter(g=>g[1].length);
+  const chipOf=n=>STAFF[n]?`<button class="chip${n===state.me?' me':''}" data-person="${esc(n)}">${esc(n)}</button>`:`<span class="chip">${esc(n)}</span>`;
+  return `<div class="card" style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap"><b>On leave on</b>
+        <select class="pick" id="lvdate" aria-label="Date">${ms.map(x=>`<option value="${x.d}"${x.d===state.lvDate?' selected':''}>${fmt(x.i)}${x.d===TODAY?' · today':''}</option>`).join('')}</select></div>
+      <div class="people">${onDay.length?onDay.map(l=>chipOf(l.n)).join(''):'<span class="none">Nobody is on leave that day.</span>'}</div></div>
+    ${groups.length?groups.map(([g,ns])=>`<div class="section"><h2>${g} · ${ns.length}</h2><div class="tablewrap"><table class="rota lvt"><thead><tr><th class="d">Name</th><th>Dates</th><th>Days in ${MON[+month.slice(5)-1]}</th></tr></thead><tbody>
+      ${ns.map(n=>`<tr class="${people[n].some(l=>l.s<=state.lvDate&&state.lvDate<=l.e)?'today':''}"><td class="d">${chipOf(n)}</td><td class="n" style="text-align:left">${people[n].map(l=>l.s===l.e?dd(l.s):`${dd(l.s)} – ${dd(l.e)}`).join(', ')}</td><td class="n mono">${dayCount(n)}</td></tr>`).join('')}</tbody></table></div></div>`).join('')
+      :`<p class="none">No leave written under the ${MONL[+month.slice(5)-1]} on-call table.</p>`}
+    <p class="note">From the leave lines under the on-call table in the Google Sheet. Approved leave requests are added there automatically. The type of leave is not shown.</p>`;
+}
+
 // ---------- shell ----------
 const VIEWS=[['today','Today'],['rota','Rota'],['me','Me'],['resources','Resources'],['team','Team'],['admin','Admin']];
 const route=()=>{const h=location.hash.slice(1);return VIEWS.some(v=>v[0]===h)?h:'today'};
@@ -1184,7 +1211,7 @@ document.addEventListener('click',e=>{
   if(t.closest('#sendswap')){const s=window._swap,b=t.closest('#sendswap'),x=days[s.i];const c=(x.cells||[]).find(c=>c.k===s.k&&canon(c.n)===state.me);if(!c){toast('Could not find this duty in the Sheet. Ask a coordinator.',true);return}let back=null;if(s.kind==='exchange'){if(!s.back)return;const y=days[s.back.i],bc=(y.cells||[]).find(c=>c.k===s.back.k&&canon(c.n)===s.to);if(!bc){toast('Could not find their duty in the Sheet. Ask a coordinator.',true);return}back={date:y.d,duty:DUTY[s.back.k].label,cell:bc.cell}}b.disabled=true;b.textContent='Sending…';apiPost({action:'swap',from:state.me,to:s.to,date:x.d,duty:DUTY[s.k].label,kind:s.kind,cell:c.cell,back}).then(res=>{remember({type:'swap',id:res.id,from:state.me,to:s.to,date:x.d,duty:DUTY[s.k].label,kind:s.kind,backDate:back&&back.date,backDuty:back&&back.duty,status:'Pending'});localLists();closeSheet();render();toast('Request sent to the coordinators')}).catch(e=>{b.disabled=false;b.textContent='Send to '+s.to;toast(esc(e.message),true)});return}
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSheet()});
-document.addEventListener('change',e=>{if(['lfrom','lto'].includes(e.target.id))updateLeaveClash();if(e.target.id==='wsort'){state.wSort=e.target.value;render()}});
+document.addEventListener('change',e=>{if(['lfrom','lto'].includes(e.target.id))updateLeaveClash();if(e.target.id==='lvdate'){state.lvDate=e.target.value;render();return}if(e.target.id==='wsort'){state.wSort=e.target.value;render()}});
 document.addEventListener('input',e=>{if(e.target.id==='tq'){state.tq=e.target.value;const pos=e.target.selectionStart;render();const q=document.getElementById('tq');q.focus();q.setSelectionRange(pos,pos);return}if(e.target.id==='swq'){window._swap.q=e.target.value.trim().toUpperCase();swapList();return}if(e.target.id==='edq'){const q=e.target.value.trim().toUpperCase();document.querySelectorAll('[data-edto]').forEach(b=>{b.hidden=!!q&&!b.dataset.edto.includes(q)});return}if(e.target.id==='pq'){state.pq=e.target.value;clearTimeout(window._pqT);window._pqT=setTimeout(()=>pdfSearch(state.pq),250);return}if(e.target.id==='sq'){state.sq=e.target.value;const pos=e.target.selectionStart;render();const q=document.getElementById('sq');q.focus();q.setSelectionRange(pos,pos);return}if(e.target.id==='nameq'){document.getElementById('namelist').innerHTML=nameList(e.target.value);return}if(e.target.id==='q'){state.q=e.target.value;const pos=e.target.selectionStart;render();const q=document.getElementById('q');q.focus();q.setSelectionRange(pos,pos)}});
 window.addEventListener('hashchange',()=>{render();window.scrollTo(0,0);if(route()==='rota'&&!state.grid&&days[state.date].d.startsWith(state.month))scrollToDay(state.date)});
 localLists();
@@ -1409,21 +1436,31 @@ function parseMorning(g){
   return {month:ym,assignments:out,leave:[],warnings:warn};
 }
 function parseFooterLeave(rows,ym,warn){
+  // Lines under the table containing "leave", e.g.
+  //   "Consultants leaves:  Ali Redha: 27/9-6/10, Tariq: 4-17/10"   (name with a colon)
+  //   "Consultants leaves: HASAN 19-26, ALI ZAIN 13-21"              (name without a colon)
+  //   "Leaves; A.Aradi: 1-10 & 21-25, Tejani: 25-31 M.Emad: 18-19"   (missing comma is fine)
   const out=[];
   const text=rows.map(r=>r.map(norm).filter(Boolean).join(' ')).filter(t=>/leave/i.test(t));
+  const D='\\d{1,2}(?:\\/\\d{1,2})?',R=`${D}(?:\\s*[-–]\\s*${D})?`;
+  const re=new RegExp(`([A-Za-z][A-Za-z.' ]*?)\\s*:?\\s*(${R}(?:\\s*&\\s*${R})*)(?=\\s*(?:,|$|[A-Za-z]))`,'g');
   for(const line of text){
     const body=line.replace(/^.*?leaves?\s*[:;]\s*/i,'');
-    const re=/([A-Za-z][A-Za-z .']*?)\s*:\s*([0-9/&\-–\s]+?)\s*(?=,?\s*[A-Za-z][A-Za-z .']*\s*:|,?\s*$)/g;let m;
-    while((m=re.exec(body))){const name=up(m[1]);
-      for(const part of m[2].split(/&|,/).map(s=>s.trim()).filter(Boolean)){const r=parseRange(part,ym);
-        if(r)out.push({name,start:r[0],end:r[1]});else warn.push({issue:'leave_unreadable',detail:`${m[1].trim()}: ${part}`})}}
+    let m;re.lastIndex=0;
+    while((m=re.exec(body))){
+      const name=up(m[1]);
+      for(const part of m[2].split('&').map(s=>s.trim()).filter(Boolean)){
+        const r=parseRange(part,ym);
+        if(r)out.push({name,start:r[0],end:r[1]});else warn.push({issue:'leave_unreadable',detail:`${m[1].trim()}: ${part}`});
+      }
+    }
   }
   return out;
 }
 function parseRange(s,ym){
-  const m=s.replace('–','-').match(/^(\d{1,2})(?:\/(\d{1,2}))?\s*-\s*(\d{1,2})(?:\/(\d{1,2}))?$/);if(!m)return null;
-  const em=m[4]?+m[4]:ym.month,sm=m[2]?+m[2]:em,y=mm=>mm>ym.month+6?ym.year-1:mm<ym.month-6?ym.year+1:ym.year;
-  return [isoDate(y(sm),sm,+m[1]),isoDate(y(em),em,+m[3])];
+  const m=s.replace('–','-').match(/^(\d{1,2})(?:\/(\d{1,2}))?(?:\s*-\s*(\d{1,2})(?:\/(\d{1,2}))?)?$/);if(!m)return null;
+  const endDay=m[3]?+m[3]:+m[1],em=m[4]?+m[4]:m[3]?ym.month:(m[2]?+m[2]:ym.month),sm=m[2]?+m[2]:em,y=mm=>mm>ym.month+6?ym.year-1:mm<ym.month-6?ym.year+1:ym.year;
+  return [isoDate(y(sm),sm,+m[1]),isoDate(y(em),em,endDay)];
 }
 
 // ---------- Sheet tabs → the app's data ----------
